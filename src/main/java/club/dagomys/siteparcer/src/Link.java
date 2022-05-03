@@ -8,12 +8,14 @@ public class Link implements Node, Comparable<Link> {
     private final Set<Link> childSet;
     private Link parentLink;
     private int layer;
+    private int statusCode;
 
     public Link(String URL) {
         layer = 0;
         parentLink = null;
         this.URL = URL;
         childSet = new TreeSet<>();
+        statusCode = 0;
     }
 
     public int getLayer() {
@@ -57,6 +59,17 @@ public class Link implements Node, Comparable<Link> {
 
     }
 
+    public Link getAbsLink(String relUrl) {
+        return new Link(getRootLink().URL + relUrl);
+    }
+
+    public int getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(int statusCode) {
+        this.statusCode = statusCode;
+    }
     private Link getRootLink() {
         return parentLink == null ? this : parentLink.getRootLink();
     }
@@ -81,6 +94,7 @@ public class Link implements Node, Comparable<Link> {
         return "Link{" +
                 "URL='" + URL + '\'' +
                 ", childSet size=" + childSet.size() +
+                ", status=" + statusCode +
                 ", parentLink=" + parentLink +
                 ", layer=" + layer +
                 '}';
