@@ -2,7 +2,7 @@ package club.dagomys.siteparcer;
 
 import club.dagomys.siteparcer.src.Link;
 import club.dagomys.siteparcer.src.SiteParser;
-import org.springframework.boot.SpringApplication;
+
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.File;
