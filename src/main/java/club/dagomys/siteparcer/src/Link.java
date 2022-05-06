@@ -1,23 +1,26 @@
 package club.dagomys.siteparcer.src;
 
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import java.util.Set;
 import java.util.TreeSet;
 
 public class Link implements Node, Comparable<Link> {
     private final String URL;
+    private String relUrl;
     private final Set<Link> childSet;
-    private final Set<Link> childRelLink;
+    private final Set<String> relSet;
     private Link parentLink;
-    private Link relLink;
     private int layer;
     private int statusCode;
 
     public Link(String URL) {
         layer = 0;
         parentLink = null;
-        this.URL = URL;
+        this.URL = URL.strip();
         childSet = new TreeSet<>();
-        childRelLink = new TreeSet<>();
+        relSet = new TreeSet<>();
         statusCode = 0;
     }
 
@@ -43,9 +46,17 @@ public class Link implements Node, Comparable<Link> {
         }
     }
 
+    public void addRelChild(String relChild) {
+        Link root = getRootLink();
+        if (!root.URL.contains(relChild)) {
+            relUrl = relChild;
+            relSet.add(relChild);
+        }
+    }
+
     private void setParentLink(Link parent) {
         this.parentLink = parent;
-        this.relLink = parent.relLink;
+        this.relUrl = parent.relUrl;
         this.layer = setLayer();
     }
 
@@ -67,6 +78,10 @@ public class Link implements Node, Comparable<Link> {
         return this;
     }
 
+    public Set<String> getRelSet() {
+        return relSet;
+    }
+
     @Override
     public int getStatusCode() {
         return statusCode;
@@ -85,13 +100,18 @@ public class Link implements Node, Comparable<Link> {
         return childSet;
     }
 
-    public Set<Link> getRelChildren() {
-        return childRelLink;
-    }
 
     @Override
     public String getValue() {
         return URL;
+    }
+
+    public String getRelUrl() {
+        return relUrl;
+    }
+
+    private void setRelUrl(String relUrl) {
+        this.relUrl = relUrl;
     }
 
     @Override
@@ -104,7 +124,8 @@ public class Link implements Node, Comparable<Link> {
         return "Link{" +
                 "URL='" + URL + '\'' +
                 ", childSet size=" + childSet.size() +
-                ", rel list =" + childRelLink.size() +
+                ", relLink =" + relUrl +
+                ", relSet size =" + relSet.size() +
                 ", status=" + statusCode +
                 ", parentLink=" + parentLink +
                 ", layer=" + layer +
