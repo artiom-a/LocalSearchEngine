@@ -9,4 +9,6 @@ public interface Node {
     Set<Link> getChildren();
     String getValue();
     int getStatusCode();
+    void addChild(Link link);
+    void addChild(Link link, String relLink);
 }

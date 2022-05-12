@@ -10,7 +10,6 @@ public class Link implements Node, Comparable<Link> {
     private final String URL;
     private String relUrl;
     private final Set<Link> childSet;
-    private final Set<String> relSet;
     private Link parentLink;
     private int layer;
     private int statusCode;
@@ -20,7 +19,6 @@ public class Link implements Node, Comparable<Link> {
         parentLink = null;
         this.URL = URL.strip();
         childSet = new TreeSet<>();
-        relSet = new TreeSet<>();
         statusCode = 0;
     }
 
@@ -38,6 +36,21 @@ public class Link implements Node, Comparable<Link> {
         }
     }
 
+    @Override
+    public void addChild(Link child, String relLink) {
+        Link root = getRootLink();
+        if (root.getLayer() == 0) {
+            root.setRelUrl("/");
+        }
+        if (!root.contains(child.getValue())) {
+            child.setParentLink(this);
+            childSet.add(child);
+            child.setRelUrl(relLink);
+        }
+    }
+
+
+    @Override
     public void addChild(Link child) {
         Link root = getRootLink();
         if (!root.contains(child.getValue())) {
@@ -46,21 +59,13 @@ public class Link implements Node, Comparable<Link> {
         }
     }
 
-    public void addRelChild(String relChild) {
-        Link root = getRootLink();
-        if (!root.URL.contains(relChild)) {
-            relUrl = relChild;
-            relSet.add(relChild);
-        }
-    }
 
     private void setParentLink(Link parent) {
         this.parentLink = parent;
-        this.relUrl = parent.relUrl;
         this.layer = setLayer();
     }
 
-    public boolean contains(String url) {
+    private boolean contains(String url) {
         if (this.URL.contains(url)) {
             return true;
         } else {
@@ -72,14 +77,6 @@ public class Link implements Node, Comparable<Link> {
         }
         return false;
 
-    }
-
-    public Link getAbsLink() {
-        return this;
-    }
-
-    public Set<String> getRelSet() {
-        return relSet;
     }
 
     @Override
@@ -124,8 +121,7 @@ public class Link implements Node, Comparable<Link> {
         return "Link{" +
                 "URL='" + URL + '\'' +
                 ", childSet size=" + childSet.size() +
-                ", relLink =" + relUrl +
-                ", relSet size =" + relSet.size() +
+                ", relative URL =" + relUrl +
                 ", status=" + statusCode +
                 ", parentLink=" + parentLink +
                 ", layer=" + layer +

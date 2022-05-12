@@ -38,14 +38,10 @@ public class SiteParser extends RecursiveTask<Link> {
                 siteElements.forEach(link -> {
                     String absolutURL = link.absUrl("href");
                     String relativeURL = link.attr("href");
-
                     if (urlChecker(absolutURL)) {
-//                        System.out.println(absolutURL);
-//                        System.out.println(relativeURL);
                         Link child = new Link(absolutURL);
                         child.setStatusCode(status);
-                        rootURL.addRelChild(relativeURL);
-                        rootURL.addChild(child);
+                        rootURL.addChild(child, relativeURL);
                     }
                 });
                 for (Link child : rootURL.getChildren()) {
@@ -78,19 +74,14 @@ public class SiteParser extends RecursiveTask<Link> {
 
     public static String createSitemap(Link node) {
         String tabs = String.join("", Collections.nCopies(node.getLayer(), "\t"));
-        StringBuilder result = new StringBuilder(tabs + node.getRelUrl());
+        StringBuilder result = new StringBuilder(tabs + node.getValue());
         node.getChildren().forEach(child -> {
             result.append("\n").append(createSitemap(child));
         });
         return result.toString();
     }
 
-    public static String createAbsSitemap(Link node) {
-        String tabs = String.join("", Collections.nCopies(node.getLayer(), "\t"));
-        StringBuilder result = new StringBuilder(tabs + node.getRelUrl());
-        node.getChildren().forEach(child -> {
-            result.append("\n").append(createAbsSitemap(child));
-        });
-        return result.toString();
+    public static void DBInsert (Link node){
+
     }
 }

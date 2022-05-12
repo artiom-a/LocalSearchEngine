@@ -22,15 +22,15 @@ public class MainSiteparcer {
     public static void main(String[] args) throws IOException {
         final File siteMap = new File("src/main/java/output/siteMap.txt");
         final FileWriter fw = new FileWriter(siteMap);
-        final String URL = "https://www.svetlovka.ru/ ";
+        final String URL = "https://skillbox.ru/     ";
 
         Link mainLink = new Link(URL);
         ForkJoinPool siteMapPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
         ForkJoinTask<Link> forkJoinTask = new SiteParser(mainLink);
         siteMapPool.invoke(forkJoinTask);
 
-//        fw.write(SiteParser.createSitemap(mainLink));
-        fw.write(SiteParser.createAbsSitemap(mainLink));
+        fw.write(SiteParser.createSitemap(mainLink));
+
         fw.flush();
         fw.close();
     }
