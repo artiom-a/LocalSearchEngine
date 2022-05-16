@@ -4,11 +4,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
@@ -74,14 +73,14 @@ public class SiteParser extends RecursiveTask<Link> {
 
     public static String createSitemap(Link node) {
         String tabs = String.join("", Collections.nCopies(node.getLayer(), "\t"));
-        StringBuilder result = new StringBuilder(tabs + node.getValue());
+        StringBuilder result = new StringBuilder(tabs + node.getRelUrl());
         node.getChildren().forEach(child -> {
             result.append("\n").append(createSitemap(child));
         });
         return result.toString();
     }
 
-    public static void DBInsert (Link node){
+    public static void DBInsert(Link node) {
 
     }
 }

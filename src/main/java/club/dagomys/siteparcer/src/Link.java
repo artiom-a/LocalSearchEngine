@@ -1,8 +1,4 @@
 package club.dagomys.siteparcer.src;
-
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import java.util.Set;
 import java.util.TreeSet;
 
