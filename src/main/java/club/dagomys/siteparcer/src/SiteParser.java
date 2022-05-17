@@ -1,8 +1,10 @@
 package club.dagomys.siteparcer.src;
 
+import club.dagomys.siteparcer.src.entity.Link;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;

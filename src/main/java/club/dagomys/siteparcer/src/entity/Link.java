@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src;
+package club.dagomys.siteparcer.src.entity;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -22,7 +22,7 @@ public class Link implements Node, Comparable<Link> {
         return layer;
     }
 
-    private int setLayer() {
+    int setLayer() {
         int depth = 0;
         if (parentLink == null) {
             return this.layer = depth;
