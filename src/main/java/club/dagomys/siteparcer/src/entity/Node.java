@@ -1,7 +1,5 @@
 package club.dagomys.siteparcer.src.entity;
 
-import org.springframework.stereotype.Component;
-
 import java.util.Set;
 
 public interface Node {

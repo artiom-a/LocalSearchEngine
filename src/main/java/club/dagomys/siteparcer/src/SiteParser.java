@@ -1,12 +1,19 @@
 package club.dagomys.siteparcer.src;
 
 import club.dagomys.siteparcer.src.entity.Link;
+import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +22,7 @@ import java.util.regex.Pattern;
 
 public class SiteParser extends RecursiveTask<Link> {
     private Link rootURL;
+    private static Logger mainLogger = MainLog4jLogger.getIstance();
 
     public SiteParser(Link URL) throws IOException {
         this.rootURL = URL;
@@ -32,8 +40,10 @@ public class SiteParser extends RecursiveTask<Link> {
                     .referrer("http://www.google.com")
                     .get();
             int status = siteFile.connection().response().statusCode();
+
             Elements siteElements = siteFile.select("a[href]");
             if (siteElements.isEmpty()) {
+                mainLogger.info("Site element is null");
                 return null;
             } else {
                 siteElements.forEach(link -> {
@@ -41,7 +51,20 @@ public class SiteParser extends RecursiveTask<Link> {
                     String relativeURL = link.attr("href");
                     if (urlChecker(absolutURL)) {
                         Link child = new Link(absolutURL);
-                        child.setStatusCode(status);
+
+                        try {
+//                            final File siteMap = new File("src/main/java/output/" + siteFile.title().replaceAll("\\/","") +".html");
+//                            final FileWriter fw = new FileWriter(siteMap);
+//                            mainLogger.warn(siteFile.connection().get());
+                            child.setHtml(siteFile.connection().get().outerHtml());
+                            child.setStatusCode(status);
+//                            fw.write(siteFile.connection().get().outerHtml());
+
+//                            fw.flush();
+//                            fw.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                         rootURL.addChild(child, relativeURL);
                     }
                 });
@@ -73,16 +96,8 @@ public class SiteParser extends RecursiveTask<Link> {
                         !anchor.matcher(url).find();
     }
 
-    public static String createSitemap(Link node) {
-        String tabs = String.join("", Collections.nCopies(node.getLayer(), "\t"));
-        StringBuilder result = new StringBuilder(tabs + node.getRelUrl());
-        node.getChildren().forEach(child -> {
-            result.append("\n").append(createSitemap(child));
-        });
-        return result.toString();
-    }
+    private String createRelLink(String absLink) {
 
-    public static void DBInsert(Link node) {
-
+        return absLink.replaceAll(rootURL.getValue(), absLink);
     }
 }

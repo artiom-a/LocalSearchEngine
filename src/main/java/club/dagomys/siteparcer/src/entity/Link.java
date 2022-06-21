@@ -1,4 +1,9 @@
 package club.dagomys.siteparcer.src.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.springframework.stereotype.Component;
+
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -9,6 +14,7 @@ public class Link implements Node, Comparable<Link> {
     private Link parentLink;
     private int layer;
     private int statusCode;
+    private String html;
 
     public Link(String URL) {
         layer = 0;
@@ -106,6 +112,16 @@ public class Link implements Node, Comparable<Link> {
     private void setRelUrl(String relUrl) {
         this.relUrl = relUrl;
     }
+
+    public void setHtml(String html) {
+        this.html = html;
+    }
+
+
+    public String getHtml() {
+        return html;
+    }
+
 
     @Override
     public int compareTo(Link o) {
