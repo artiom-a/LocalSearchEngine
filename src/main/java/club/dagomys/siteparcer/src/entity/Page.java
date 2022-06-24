@@ -16,12 +16,13 @@ import java.util.TreeSet;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(indexes = { @Index(name = "page_index", columnList = "path") })
 public class Page implements Comparable<Page> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
-    @Column(name = "path")
+    @Column(name = "path", length = 700)
     private String relPath;
     @Column(name = "code")
     private int statusCode;
@@ -36,6 +37,6 @@ public class Page implements Comparable<Page> {
 
     @Override
     public int compareTo(Page o) {
-        return 0;
+        return this.content.compareTo(o.content);
     }
 }

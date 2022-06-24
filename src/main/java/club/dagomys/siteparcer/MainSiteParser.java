@@ -7,10 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.io.IOException;
 
 @SpringBootApplication
-public class MainSiteparser {
+public class MainSiteParser {
 
     public static void main(String[] args) throws IOException {
-        SpringApplication app = new SpringApplication(MainSiteparser.class);
+        SpringApplication app = new SpringApplication(MainSiteParser.class);
         app.setBannerMode(Banner.Mode.OFF);
         app.run(args);
     }

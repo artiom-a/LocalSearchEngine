@@ -14,9 +14,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
@@ -28,45 +26,37 @@ public class SiteParser extends RecursiveTask<Link> {
         this.rootURL = URL;
     }
 
+    //TODO: 22.06.2022{
+    // реализовать метод обхода сайта с сохранением ссылки, кода ответа и содержимого страницы
+    // }
     @Override
     protected Link compute() {
         List<SiteParser> childParserList = new ArrayList<>();
         List<Link> childList = new ArrayList<>();
         try {
-            Thread.sleep(150);
+            Thread.sleep(120);
             Document siteFile = Jsoup
                     .connect(rootURL.getValue())
                     .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                     .referrer("http://www.google.com")
                     .get();
-            int status = siteFile.connection().response().statusCode();
 
             Elements siteElements = siteFile.select("a[href]");
             if (siteElements.isEmpty()) {
                 mainLogger.info("Site element is null");
                 return null;
             } else {
+                int status = siteFile.connection().response().statusCode();
                 siteElements.forEach(link -> {
                     String absolutURL = link.absUrl("href");
                     String relativeURL = link.attr("href");
+                    rootURL.setHtml(siteFile.outerHtml());
+                    rootURL.setStatusCode(status);
                     if (urlChecker(absolutURL)) {
                         Link child = new Link(absolutURL);
-
-                        try {
-//                            final File siteMap = new File("src/main/java/output/" + siteFile.title().replaceAll("\\/","") +".html");
-//                            final FileWriter fw = new FileWriter(siteMap);
-//                            mainLogger.warn(siteFile.connection().get());
-                            child.setHtml(siteFile.connection().get().outerHtml());
-                            child.setStatusCode(status);
-//                            fw.write(siteFile.connection().get().outerHtml());
-
-//                            fw.flush();
-//                            fw.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
                         rootURL.addChild(child, relativeURL);
                     }
+
                 });
                 for (Link child : rootURL.getChildren()) {
                     SiteParser childParser = new SiteParser(child);
@@ -78,8 +68,8 @@ public class SiteParser extends RecursiveTask<Link> {
                     childList.add(childTask.join());
                 }
             }
-        } catch (InterruptedException | IOException e) {
-            System.out.println(e.getMessage());
+        } catch (IOException | InterruptedException e) {
+            mainLogger.error(e.getMessage());
         }
         return rootURL;
     }
@@ -87,7 +77,7 @@ public class SiteParser extends RecursiveTask<Link> {
     private boolean urlChecker(String url) {
         Pattern urlPattern = Pattern.compile("(https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,})");
         Pattern patternRootDomain = Pattern.compile("^" + rootURL.getValue());
-        Pattern file = Pattern.compile("([^\\s]+((jpg|png|gif|bmp|pdf|JPG))$)");
+        Pattern file = Pattern.compile("([^\\s]+((jpg|png|gif|bmp|pdf|JPG|ics))$)");
         Pattern anchor = Pattern.compile("#([\\w\\-]+)?$");
         return
                 urlPattern.matcher(url).find() &
