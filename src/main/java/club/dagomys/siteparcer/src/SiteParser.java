@@ -86,6 +86,9 @@ public class SiteParser extends RecursiveTask<Link> {
                         !anchor.matcher(url).find();
     }
 
+/*
+* Метод нуждается в доработке
+* */
     private String createRelLink(String absLink) {
 
         return absLink.replaceAll(rootURL.getValue(), absLink);
