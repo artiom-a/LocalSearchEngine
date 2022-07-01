@@ -11,6 +11,7 @@ import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class LemmaCounter {
@@ -21,28 +22,39 @@ public class LemmaCounter {
     public LemmaCounter(String text) throws IOException {
         this.text = text;
         russianMorphology = new RussianLuceneMorphology();
-        wordsMap = new HashMap<>();
+        wordsMap = new TreeMap<>();
         countLemmas();
     }
 
     private Map<String, Integer> countLemmas() {
         String[] replacedtext = text.toLowerCase(Locale.ROOT).replaceAll("—", "")
                 .replaceAll("\\p{Punct}|[0-9]", "").split("\\s+");
-        List<String> morphList = null;
-        List<String> morphWord = new ArrayList<>();
-        for (String word : replacedtext) {
-            morphList = russianMorphology.getMorphInfo(word);
-            for (String morph : morphList) {
-                if (!isAuxiliaryPartsOfSpeech(morph)) {
-                    morphWord.add(word);
-                }
 
-            }
-        }
+        List<String> morphList = Arrays.stream(replacedtext).map(russianMorphology::getMorphInfo).filter(morph -> !isAuxiliaryPartsOfSpeech(morph.get(0))).flatMap(List::stream).collect(Collectors.toList());
+        Map<String, Long> normList = Arrays.stream(replacedtext).map(russianMorphology::getNormalForms).collect(Collectors.groupingBy(normalWord->normalWord.get(0), Collectors.counting()));
+
+
+
+
+        morphList.forEach(System.out::println);
+        normList.entrySet().forEach(System.out::println);
+//        normList.forEach(System.out::println);
+        List<String> necessaryWords = new ArrayList<>();
+//        for (String morph : morphList) {
+//            if (!isAuxiliaryPartsOfSpeech(morph)) {
+//                necessaryWords.add(morph);
+//            }
+//
+//        }
+
+//        for (String s : replacedtext){
+//            System.out.println(russianMorphology.getMorphInfo(s).size());
+//            russianMorphology.getMorphInfo(s).forEach(System.out::println);
+//        }
         List<String> normalFormList;
-        for (String morph : morphWord) {
+        for (String morph : necessaryWords) {
             normalFormList = russianMorphology.getNormalForms(morph);
-            for (String word : normalFormList){
+            for (String word : normalFormList) {
                 wordsMap.merge(word, 1, Integer::sum);
             }
 
@@ -64,7 +76,7 @@ public class LemmaCounter {
         return word.contains("СОЮЗ") |
                 word.contains("МЕЖД") |
                 word.contains("МС") |
-                word.contains("МС-П") |
+//                word.contains("МС-П") |
                 word.contains("ПРЕДЛ") |
                 word.contains("КР_ПРИЛ");
     }
