@@ -1,5 +1,7 @@
 package club.dagomys.lemmatisator.scr;
 
+import io.github.kju2.languagedetector.LanguageDetector;
+import io.github.kju2.languagedetector.language.Language;
 import org.apache.lucene.morphology.Heuristic;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.Morphology;
@@ -40,6 +42,10 @@ public class LimmatisatorMain {
                     "I have chosen English as a foreign language, because it is the most widespread language on the Earth. About one billion people speak or understand English. English is the language of international communication in many areas of life: trade, tourism and sport. The latest results of scientific investigations are also translated into English. Many books of the best modern writers and poets are translated into English. Sometimes, it is the only way to read and understand the latest works of foreign authors, Japanese or Turkish, for example.\n" +
                     "\n" +
                     "Language is a means of communication. We learn it in order to find new friends abroad and get acquainted with other cultures. Some of my friends have already moved to the USA and Canada. They often write me letters in English and I am glad that I can understand them without anybody's help. This communication helps me to learn new English words and master my speaking skills.";
+            String french = "Ma ville\n" +
+                    "J'habite une belle ville dans le nord de la France. Il y a un quartier très agréable pour aller se balader, lorsqu'il fait beau. Il est possible de faire du vélo dans un parc autour d'une citadelle fortifiée.";
+
+
             LemmaCounter counter = new LemmaCounter(text);
             counter.getWordsMap().forEach((key, value) -> System.out.println(key + "\t" + value));
         } catch (IOException e) {

@@ -22,4 +22,8 @@ public class PageService {
         mainLogger.info(page);
     }
 
+    public SiteParserRunner siteParse(String url){
+        return new SiteParserRunner(url);
+    }
+
 }
