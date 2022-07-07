@@ -2,16 +2,21 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
+@Component
+@NoArgsConstructor
 public class SiteParser extends RecursiveTask<Link> {
     private Link rootURL;
     private static Logger mainLogger = MainLog4jLogger.getIstance();
@@ -33,6 +38,7 @@ public class SiteParser extends RecursiveTask<Link> {
                     .connect(rootURL.getValue())
                     .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                     .referrer("http://www.google.com")
+                    .ignoreHttpErrors(true)
                     .get();
 
             Elements siteElements = siteFile.select("a[href]");
@@ -80,11 +86,4 @@ public class SiteParser extends RecursiveTask<Link> {
                         !anchor.matcher(url).find();
     }
 
-/*
-* Метод нуждается в доработке
-* */
-    private String createRelLink(String absLink) {
-
-        return absLink.replaceAll(rootURL.getValue(), absLink);
-    }
 }

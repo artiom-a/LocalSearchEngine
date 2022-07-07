@@ -5,6 +5,8 @@ import club.dagomys.siteparcer.src.repos.FieldRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class FieldService {
     @Autowired
@@ -12,5 +14,9 @@ public class FieldService {
 
     public Field saveField(Field field) {
         return fieldRepository.save(field);
+    }
+
+    public void insertStaticData(List<Field> fields){
+        fieldRepository.saveAll(fields);
     }
 }

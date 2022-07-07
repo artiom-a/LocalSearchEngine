@@ -7,10 +7,13 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 import java.util.TreeSet;
 
+@Component
+@NoArgsConstructor
+@AllArgsConstructor
 public class Link implements Node, Comparable<Link> {
-    private final String URL;
+    private  String URL;
     private String relUrl;
-    private final Set<Link> childSet;
+    private  Set<Link> childSet;
     private Link parentLink;
     private int layer;
     private int statusCode;

@@ -8,18 +8,18 @@
 </head>
 <body>
 <div class="container">
-    <h1>Shop management system</h1>
+    <h1>WEB Crawler</h1>
     <hr>
-    <h2>Save shop</h2>
+    <h2>Enter URL bellow</h2>
 
     <form action="#" th:action="@{/}" method="POST">
-        <input type="text" th:field="*{url}" placeholder="add url" class="form-control mb-4 col-4">
-        <button type="submit" class="btn btn-info col-2"> Save shop</button>
+        <input type="text" th:value="${url}" th:name="url" placeholder="add url" class="form-control mb-4 col-4">
+        <button type="submit" class="btn btn-info col-2"> Start crawler</button>
     </form>
 
     <hr>
 
-    <a th:href="@{/}"> Back to shop List</a>
+    <!--    <a th:href="@{/}"> Back to shop List</a>-->
 </div>
 </body>
 </html>

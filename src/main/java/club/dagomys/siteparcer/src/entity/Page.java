@@ -4,19 +4,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.List;
 
 @Data
 @ToString
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(indexes = { @Index(name = "page_index", columnList = "path") })
+@Table(indexes = {@Index(name = "page_index", columnList = "path") })
 public class Page implements Comparable<Page> {
 
     @Id

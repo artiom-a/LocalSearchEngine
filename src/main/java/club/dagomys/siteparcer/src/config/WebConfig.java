@@ -8,7 +8,7 @@ public class WebConfig {
     @Bean
     public ClassLoaderTemplateResolver secondaryTemplateResolver() {
         ClassLoaderTemplateResolver secondaryTemplateResolver = new ClassLoaderTemplateResolver();
-        secondaryTemplateResolver.setPrefix("src/main/java/club/dagomys/siteparcer/resourses/templates");
+        secondaryTemplateResolver.setPrefix("club/dagomys/siteparcer/resourses/templates");
         secondaryTemplateResolver.setSuffix(".html");
         secondaryTemplateResolver.setTemplateMode(TemplateMode.HTML);
         secondaryTemplateResolver.setCharacterEncoding("UTF-8");

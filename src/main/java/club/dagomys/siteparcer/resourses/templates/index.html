@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="ISO-8859-1">
-    <title>Shop Inventory</title>
+    <title>WEB-Crawler DAGOMYS</title>
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
           integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
@@ -13,27 +13,28 @@
 <body>
 
 <div class="container my-2">
-    <h1>Shop list</h1>
+    <h1>All pages</h1>
 
-    <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Go to product list</a>
-    <a th:href="@{/addUrl}" class="btn btn-primary btn-sm mb-3"> Add Shop </a>
+    <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Home</a>
+    <a th:href="@{/addUrl}" class="btn btn-primary btn-sm mb-3"> Add URL </a>
 
     <table border="1" class="table table-striped table-responsive-md">
         <thead>
         <tr>
-            <th>Shop #</th>
-            <th>Shop name</th>
-            <th>Shop actions</th>
+            <th>Page ID</th>
+            <th>Page path</th>
+            <th>Page code</th>
         </tr>
         </thead>
         <tbody>
-<!--        <tr th:each="shop: ${shops}">-->
-<!--            <td th:text="${shop.id}"></td>-->
-<!--            <td th:text="${shop.name}"></td>-->
+        <tr th:each="page: ${pages}">
+            <td th:text="${page.id}"></td>
+            <td th:text="${page.relPath}"></td>
+            <td th:text="${page.statusCode}"></td>
 <!--            <td><a th:href="@{shops/{id}(id=${shop.id})}" class="btn btn-primary">Update</a>-->
 <!--                <a th:href="@{/deleteShop/{id}(id=${shop.id})}" class="btn btn-danger">Delete</a>-->
-<!--            </td>-->
-<!--        </tr>-->
+            </td>
+        </tr>
         </tbody>
     </table>
 </div>

@@ -27,29 +27,31 @@ public class LemmaCounter {
 
     public LemmaCounter(String text) throws IOException {
         this.text = text;
-        wordsMap = new TreeMap<>();
         countLemmas();
     }
 
     private Map<String, Long> countLemmas() {
+
         Language checkLanguage = detector.detectPrimaryLanguageOf(text);
         if (checkLanguage.code.equals("ru") || checkLanguage.code.equals("en")) {
-            String[] replacedtext = text.toLowerCase(Locale.ROOT).replaceAll("—", "")
-                    .replaceAll("\\p{Punct}|[0-9]", "").split("\\s+");
+            wordsMap = new TreeMap<>();
+            String[] replacedtext = text.toLowerCase(Locale.ROOT)
+                    .replaceAll("—", "")
+                    .replaceAll("-", " ")
+                    .replaceAll("\\p{Punct}|[0-9]", "")
+                    .split("\\s+");
 
             List<String> morphList = Arrays.stream(replacedtext)
                     .filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
                     .collect(Collectors.toList());
-
             wordsMap = morphList
                     .stream()
                     .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
                     .collect(Collectors.groupingBy(normalWord -> normalWord.get(0), Collectors.counting()));
+            return wordsMap;
         } else {
-            System.out.println("Введите другой текст");
+            return null;
         }
-
-        return wordsMap;
     }
 
 
@@ -75,9 +77,8 @@ public class LemmaCounter {
                         morph.contains("PREP") |
                         morph.contains("PART");
             }
-        } else {
+        } else
             System.out.println("Язык не распознан");
-        }
         return false;
     }
 
