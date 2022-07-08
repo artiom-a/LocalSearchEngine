@@ -19,5 +19,4 @@ public class Lemma {
     private int id;
     private String lemma;
     private int frequency;
-
 }

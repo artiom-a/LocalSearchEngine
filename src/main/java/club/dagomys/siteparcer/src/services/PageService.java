@@ -15,6 +15,7 @@ import java.util.List;
 @Service
 public class PageService {
     private Logger mainLogger = MainLog4jLogger.getIstance();
+    private SiteParserRunner siteParser;
 
     @Autowired
     PageRepository pageRepository;
@@ -31,7 +32,8 @@ public class PageService {
     }
 
     public void startSiteParse(String url){
-        new SiteParserRunner(url, this).run();
+        siteParser = new SiteParserRunner(url, this);
+        siteParser.run();
     }
 
     public void insertToDatabase(Link link) {

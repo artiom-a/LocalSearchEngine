@@ -1,4 +1,3 @@
-/*
 package club.dagomys.siteparcer.src.repos;
 
 import club.dagomys.siteparcer.src.entity.SearchIndex;
@@ -7,4 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SearchIndexRepository extends JpaRepository<SearchIndex, Integer> {
-}*/
+}

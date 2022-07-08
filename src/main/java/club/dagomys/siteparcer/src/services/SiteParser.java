@@ -5,6 +5,7 @@ import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.Logger;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -14,6 +15,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
+
+import static org.springframework.http.HttpHeaders.ACCEPT;
+import static org.springframework.http.HttpHeaders.EMPTY;
 
 @Component
 @NoArgsConstructor
@@ -40,7 +44,6 @@ public class SiteParser extends RecursiveTask<Link> {
                     .referrer("http://www.google.com")
                     .ignoreHttpErrors(true)
                     .get();
-
             Elements siteElements = siteFile.select("a[href]");
             if (siteElements.isEmpty()) {
                 mainLogger.info("Site element is null");
@@ -50,6 +53,7 @@ public class SiteParser extends RecursiveTask<Link> {
                 siteElements.forEach(link -> {
                     String absolutURL = link.absUrl("href");
                     String relativeURL = link.attr("href");
+
                     rootURL.setHtml(siteFile.outerHtml());
                     rootURL.setStatusCode(status);
                     if (urlChecker(absolutURL)) {
