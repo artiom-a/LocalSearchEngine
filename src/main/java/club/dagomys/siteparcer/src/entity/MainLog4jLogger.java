@@ -8,7 +8,8 @@ public class MainLog4jLogger {
 
     private MainLog4jLogger(){}
 
-    public static Logger getIstance(){
+    public static Logger getInstance(
+    ){
         if (MAIN_LOGGER == null){
             synchronized (MainLog4jLogger.class) {
                 MAIN_LOGGER = LogManager.getLogger("mainLogger");

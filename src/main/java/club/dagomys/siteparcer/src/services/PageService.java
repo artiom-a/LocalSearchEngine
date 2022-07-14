@@ -1,13 +1,18 @@
 package club.dagomys.siteparcer.src.services;
 
+import club.dagomys.lemmatisator.scr.LemmaCounter;
+import club.dagomys.siteparcer.src.entity.FieldSelector;
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.repos.PageRepository;
 import org.apache.logging.log4j.Logger;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,11 +20,15 @@ import java.util.NoSuchElementException;
 
 @Service
 public class PageService {
-    private Logger mainLogger = MainLog4jLogger.getIstance();
+    private Logger mainLogger = MainLog4jLogger.getInstance();
     private SiteParserRunner siteParser;
 
     @Autowired
-    PageRepository pageRepository;
+    private PageRepository pageRepository;
+
+    @Autowired
+    private FieldService fieldService;
+
     public List<Page> getAllPages() {
         List<Page> allPages = new ArrayList<>();
         for(Page page : pageRepository.findAll()){
@@ -45,6 +54,12 @@ public class PageService {
             siteParser.run();
         }
 
+    }
+
+    public void indexingAllPages(){
+        for (Page page: getAllPages()){
+            fieldService.startIndexingPage(page);
+        }
     }
 
     public void insertToDatabase(Link link) {

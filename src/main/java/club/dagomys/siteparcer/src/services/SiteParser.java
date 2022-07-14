@@ -2,10 +2,8 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.Logger;
-import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -16,14 +14,11 @@ import java.util.*;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
-import static org.springframework.http.HttpHeaders.ACCEPT;
-import static org.springframework.http.HttpHeaders.EMPTY;
-
 @Component
 @NoArgsConstructor
 public class SiteParser extends RecursiveTask<Link> {
     private Link rootURL;
-    private static Logger mainLogger = MainLog4jLogger.getIstance();
+    private static Logger mainLogger = MainLog4jLogger.getInstance();
 
     public SiteParser(Link URL) throws IOException {
         this.rootURL = URL;

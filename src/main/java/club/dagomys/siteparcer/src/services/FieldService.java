@@ -1,16 +1,19 @@
 package club.dagomys.siteparcer.src.services;
 
+import club.dagomys.lemmatisator.scr.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.Field;
 import club.dagomys.siteparcer.src.entity.FieldSelector;
+import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.repos.FieldRepository;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.io.IOException;
+import java.util.*;
 
 @Service
 public class FieldService {
@@ -33,6 +36,18 @@ public class FieldService {
         return getAllFields().stream().filter(field->field.getName().equalsIgnoreCase(selector.name())).findFirst().orElseThrow(NoSuchElementException::new);
     }
 
+    public void startIndexingPage(Page indexingPage){
+        Document doc = Jsoup.parse(indexingPage.getContent());
+        doc.body().data();
+        System.out.println(doc.getElementsByTag(getFieldByName(FieldSelector.TITLE).getName()).text());
+        System.out.println(doc.getElementsByTag(getFieldByName(FieldSelector.BODY).getName()).text());
+        try {
+            Optional<Map> lemmas = Optional.of(new LemmaCounter(doc.getElementsByTag(getFieldByName(FieldSelector.BODY).getName()).text()).getWordsMap());
+            lemmas.get().entrySet().forEach(System.out::println);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
     /**
      * @param fieldService
      * @return Добавляет 2 статические записи для полей на страницах сайтов со значениями по умолчанию

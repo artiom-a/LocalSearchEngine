@@ -2,20 +2,15 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
-import club.dagomys.siteparcer.src.entity.Page;
-import club.dagomys.siteparcer.src.services.PageService;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
@@ -32,7 +27,7 @@ public class SiteParserRunner {
         this.URL = URL;
     }
 
-    Logger mainLogger = MainLog4jLogger.getIstance();
+    Logger mainLogger = MainLog4jLogger.getInstance();
 
     public void run(String... args) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy hh:mm:ss");
