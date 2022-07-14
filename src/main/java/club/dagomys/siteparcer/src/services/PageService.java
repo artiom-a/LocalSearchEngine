@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class PageService {
@@ -31,9 +32,19 @@ public class PageService {
         return pageRepository.save(page);
     }
 
+    public Page getPageById(Integer id){
+        return getAllPages().stream().filter(page -> page.getId()==id).findFirst().orElseThrow(NoSuchElementException::new);
+    }
+
     public void startSiteParse(String url){
         siteParser = new SiteParserRunner(url, this);
-        siteParser.run();
+        if(siteParser.getStatus()){
+            mainLogger.warn("SiteParser is running!");
+        } else {
+
+            siteParser.run();
+        }
+
     }
 
     public void insertToDatabase(Link link) {

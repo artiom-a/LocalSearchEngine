@@ -24,7 +24,7 @@ public class SiteParserRunner {
     @Autowired
     private PageService pageService;
     private final String URL;
-    private boolean isStarted = false;
+    private static boolean isStarted = false;
 
     @Autowired
     public SiteParserRunner(@Value("${site.name}") String URL, PageService service) {
@@ -35,8 +35,6 @@ public class SiteParserRunner {
     Logger mainLogger = MainLog4jLogger.getIstance();
 
     public void run(String... args) {
-        setStarted(true);
-        System.out.println(isStarted);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy hh:mm:ss");
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
@@ -54,8 +52,6 @@ public class SiteParserRunner {
             System.out.println(e.getMessage());
 
         }
-        setStarted(false);
-        System.out.println(isStarted);
     }
 
     private void setStarted(boolean started) {

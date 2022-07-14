@@ -31,7 +31,7 @@
             <td th:text="${page.id}"></td>
             <td th:text="${page.relPath}"></td>
             <td th:text="${page.statusCode}"></td>
-<!--            <td><a th:href="@{shops/{id}(id=${shop.id})}" class="btn btn-primary">Update</a>-->
+            <td><a th:href="@{/{id}(id=${page.id})}" class="btn btn-primary">Start indexing page</a>
 <!--                <a th:href="@{/deleteShop/{id}(id=${shop.id})}" class="btn btn-danger">Delete</a>-->
             </td>
         </tr>

@@ -6,15 +6,15 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 public class WebConfig {
     @Bean
-    public ClassLoaderTemplateResolver secondaryTemplateResolver() {
-        ClassLoaderTemplateResolver secondaryTemplateResolver = new ClassLoaderTemplateResolver();
-        secondaryTemplateResolver.setPrefix("club/dagomys/siteparcer/resourses/templates");
-        secondaryTemplateResolver.setSuffix(".html");
-        secondaryTemplateResolver.setTemplateMode(TemplateMode.HTML);
-        secondaryTemplateResolver.setCharacterEncoding("UTF-8");
-        secondaryTemplateResolver.setOrder(0);
-        secondaryTemplateResolver.setCheckExistence(true);
+    public ClassLoaderTemplateResolver templateResolver() {
+        ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
+        templateResolver.setPrefix("club/dagomys/siteparcer/resourses/templates");
+        templateResolver.setSuffix(".html");
+        templateResolver.setTemplateMode(TemplateMode.HTML);
+        templateResolver.setCharacterEncoding("UTF-8");
+        templateResolver.setOrder(0);
+        templateResolver.setCheckExistence(true);
 
-        return secondaryTemplateResolver;
+        return templateResolver;
     }
 }

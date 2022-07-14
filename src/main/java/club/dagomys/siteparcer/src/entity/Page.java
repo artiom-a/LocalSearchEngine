@@ -18,7 +18,7 @@ import java.util.List;
 public class Page implements Comparable<Page> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     @Column(name = "path", length = 700)
     private String relPath;

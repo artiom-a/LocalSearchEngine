@@ -14,13 +14,14 @@ import javax.persistence.*;
 @AllArgsConstructor
 public class Field {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private  String name;
-    private  String selector;
+    @Enumerated(EnumType.STRING)
+    private  FieldSelector selector;
     private  float weight;
 
-    public Field(String name, String selector, float weight){
+    public Field(String name, FieldSelector selector, float weight){
         this.name = name;
         this.selector = selector;
         this.weight = weight;
