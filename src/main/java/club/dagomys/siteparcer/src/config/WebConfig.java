@@ -1,6 +1,7 @@
 package club.dagomys.siteparcer.src.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 

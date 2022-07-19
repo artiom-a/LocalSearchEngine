@@ -12,8 +12,11 @@
     <hr>
     <h2>Enter URL bellow</h2>
 
-    <form action="#" th:action="@{/}" method="POST">
-        <input type="text" th:value="${url}" th:name="url" placeholder="add url" class="form-control mb-4 col-4">
+    <form action="#" th:action="@{/addUrl}" method="POST" th:object="${URL}">
+        <input type="text" th:field="*{path}"  placeholder="add url" class="form-control mb-4 col-4">
+        <div th:each="err : ${#fields.errors('path')}">
+            <li  th:text ="${err}"></li>
+        </div>
         <button type="submit" class="btn btn-info col-2"> Start crawler</button>
     </form>
 

@@ -1,10 +1,7 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.lemmatisator.scr.LemmaCounter;
-import club.dagomys.siteparcer.src.entity.FieldSelector;
-import club.dagomys.siteparcer.src.entity.Link;
-import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
-import club.dagomys.siteparcer.src.entity.Page;
+import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.repos.PageRepository;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -12,11 +9,9 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @Service
 public class PageService {
@@ -29,9 +24,15 @@ public class PageService {
     @Autowired
     private FieldService fieldService;
 
+    @Autowired
+    private LemmaService lemmaService;
+
+    @Autowired
+    SearchIndexService searchIndexService;
+
     public List<Page> getAllPages() {
         List<Page> allPages = new ArrayList<>();
-        for(Page page : pageRepository.findAll()){
+        for (Page page : pageRepository.findAll()) {
             allPages.add(page);
         }
         return allPages;
@@ -41,13 +42,13 @@ public class PageService {
         return pageRepository.save(page);
     }
 
-    public Page getPageById(Integer id){
-        return getAllPages().stream().filter(page -> page.getId()==id).findFirst().orElseThrow(NoSuchElementException::new);
+    public Page getPageById(Integer id) {
+        return getAllPages().stream().filter(page -> page.getId() == id).findFirst().orElseThrow(NoSuchElementException::new);
     }
 
-    public void startSiteParse(String url){
+    public void startSiteParse(String url) {
         siteParser = new SiteParserRunner(url, this);
-        if(siteParser.getStatus()){
+        if (siteParser.getStatus()) {
             mainLogger.warn("SiteParser is running!");
         } else {
 
@@ -56,10 +57,11 @@ public class PageService {
 
     }
 
-    public void indexingAllPages(){
-        for (Page page: getAllPages()){
-            fieldService.startIndexingPage(page);
+    public Map<String, Integer> indexingAllPages() {
+        for (Page page : getAllPages()) {
+            searchIndexService.startIndexingPage(page, FieldSelector.TITLE);
         }
+        return lemmaService.findByName();
     }
 
     public void insertToDatabase(Link link) {

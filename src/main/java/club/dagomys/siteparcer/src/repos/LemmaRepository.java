@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LemmaRepository extends JpaRepository<Lemma, Integer> {
+    Lemma findByLemma(String lemma);
 }

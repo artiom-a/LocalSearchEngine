@@ -48,7 +48,7 @@ public class LemmaCounter {
     private boolean isAuxiliaryPartsOfSpeech(String word) {
 
         if (Objects.equals(getLanguage(word), "RU")) {
-            mainLogger.info("RU \t" + word);
+//            mainLogger.info("RU \t" + word);
             for (String morph : russianMorphology.getMorphInfo(word)) {
                 return morph.contains("СОЮЗ") |
                         morph.contains("МЕЖД") |
@@ -57,6 +57,7 @@ public class LemmaCounter {
                         morph.contains("КР_ПРИЛ");
             }
         } else if (Objects.equals(getLanguage(word), "EN")) {
+//            mainLogger.info("EN \t" + word);
             for (String morph : englishMorphology.getMorphInfo(word)) {
                 return morph.contains("CONJ") |
                         morph.contains("INT") |
@@ -77,7 +78,7 @@ public class LemmaCounter {
             } else if (Character.UnicodeBlock.of(word.charAt(i)).equals(Character.UnicodeBlock.BASIC_LATIN) | word.matches(english.pattern())) {
                 return "EN";
             } else {
-                return "Can't check language";
+                return new Exception("Can't check language").getMessage();
             }
         }
         return null;
