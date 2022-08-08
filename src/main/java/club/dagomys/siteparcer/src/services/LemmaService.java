@@ -16,29 +16,19 @@ public class LemmaService {
     @Autowired
     private LemmaRepository lemmaRepository;
 
-    @Autowired
-    private static Map<Lemma, Integer> lemmaMap = new TreeMap<>();
-    private static ArrayList<Lemma> lemmaList = new ArrayList<>();
+    public List<Lemma> gelAllLemma() {
+        return new ArrayList<>(lemmaRepository.findAll());
+    }
 
     public void saveLemma(Lemma lemma) {
-        lemmaList.add(lemma);
+            lemmaRepository.save(lemma);
     }
 
-    public void saveAllLemmas(){
-        System.out.println("Saving...");
-        lemmaMap.forEach((key, value) -> lemmaRepository.save(new Lemma(key.getLemma(), value)));
-        System.out.println("Saving complete!");
-    }
-
-    public Map<String, Integer> findByName() {
-        return countDuplicates(lemmaList);
-    }
-
-    private static Map<String, Integer> countDuplicates(List<Lemma> inputList) {
-        return inputList.stream().collect(Collectors.toMap(Lemma::getLemma, v -> 1, Integer::sum));
-    }
-
-    public Iterable<Lemma> saveAllLemmas(List<Lemma> lemmas) {
+    public Iterable<Lemma> saveAllLemmas(Set<Lemma> lemmas) {
         return lemmaRepository.saveAllAndFlush(lemmas);
+    }
+
+    public void deleteAllLemma(){
+        lemmaRepository.deleteAll();
     }
 }

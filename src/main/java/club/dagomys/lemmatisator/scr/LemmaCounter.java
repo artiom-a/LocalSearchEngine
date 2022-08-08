@@ -1,8 +1,6 @@
 package club.dagomys.lemmatisator.scr;
 
 import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
-import io.github.kju2.languagedetector.LanguageDetector;
-import io.github.kju2.languagedetector.language.Language;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
@@ -19,29 +17,62 @@ public class LemmaCounter {
     private final LuceneMorphology russianMorphology = new RussianLuceneMorphology();
     private final LuceneMorphology englishMorphology = new EnglishLuceneMorphology();
     private final Logger mainLogger = MainLog4jLogger.getInstance();
-    private final String text;
-    private Map<String, Long> wordsMap;
-    private final LanguageDetector detector = new LanguageDetector();
-    private final Pattern wordPatterRegexp = Pattern.compile("[A-Za-zА-Яа-яё][A-Za-zА-Яа-яё'^]*");
+    private Map<String, Integer> wordsMap;
+    private Set<String> lemmaSet;
+    private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
     private final Pattern english = Pattern.compile("([A-z]+)");
     private final Pattern russian = Pattern.compile("([А-яё]+)");
 
-    public LemmaCounter(String text) throws IOException {
-        this.text = text;
-        countLemmas();
+    public LemmaCounter() throws IOException {
+
     }
 
-    private Map<String, Long> countLemmas() {
-        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT));
+    public Map<String, Integer> countLemmas(String text) {
         wordsMap = new TreeMap<>();
-        List<String> replacedtext = wordMatch.results().map(MatchResult::group).collect(Collectors.toList());
-        List<String> morphList = replacedtext.stream().filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph)).collect(Collectors.toList());
-        wordsMap = morphList.stream().map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word)).collect(Collectors.groupingBy(normalWord -> normalWord.get(0), Collectors.counting()));
+        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]"," "));
+        List<String> replacedText = wordMatch.results()
+                .map(MatchResult::group)
+                .collect(Collectors.toList());
+
+        List<String> morphList = replacedText.stream()
+                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
+                .collect(Collectors.toList());
+        mainLogger.warn("\t\t" + morphList);
+
+        wordsMap = morphList.stream().map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
+                .collect(Collectors.toMap(l -> l.get(0), v -> 1, Integer::sum));
         return wordsMap;
     }
 
 
-    public Map<String, Long> getWordsMap() {
+    public Set<String> getLemmaSet(String text) {
+        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]"," "));
+        lemmaSet = new TreeSet<>();
+        /**
+         * Breaking the whole text into words
+         */
+        List<String> replacedText = wordMatch.results()
+                .map(MatchResult::group)
+                .collect(Collectors.toList());
+        /**
+         * Form a list of English and Russian morphs. Cleaning from service parts of speech
+         */
+        Set<String> morphList = replacedText.stream()
+                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
+                .collect(Collectors.toSet());
+        mainLogger.warn("\t\t" + morphList);
+        /**
+         Get set of normal lemmas
+         */
+        lemmaSet = morphList.stream()
+                .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+        return lemmaSet;
+
+    }
+
+    public Map<String, Integer> getWordsMap() {
         return wordsMap;
     }
 

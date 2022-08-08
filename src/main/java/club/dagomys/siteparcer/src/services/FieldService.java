@@ -30,9 +30,6 @@ public class FieldService {
         return fields;
     }
 
-    @Autowired
-    private LemmaService lemmaService;
-
     public Field saveField(Field field) {
         return fieldRepository.save(field);
     }

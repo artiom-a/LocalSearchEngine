@@ -14,6 +14,7 @@ public class MainSiteParser {
     public static void main(String[] args) throws IOException {
         SpringApplication app = new SpringApplication(MainSiteParser.class);
         app.setBannerMode(Banner.Mode.OFF);
+        app.setLazyInitialization(true);
         app.run(args);
     }
 }

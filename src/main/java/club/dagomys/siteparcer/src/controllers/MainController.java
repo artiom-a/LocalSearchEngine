@@ -1,17 +1,17 @@
 package club.dagomys.siteparcer.src.controllers;
 
 import club.dagomys.lemmatisator.scr.LemmaCounter;
-import club.dagomys.siteparcer.src.entity.FieldSelector;
-import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
-import club.dagomys.siteparcer.src.entity.Page;
-import club.dagomys.siteparcer.src.entity.URLRequest;
+import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.services.FieldService;
 import club.dagomys.siteparcer.src.services.LemmaService;
 import club.dagomys.siteparcer.src.services.PageService;
+import club.dagomys.siteparcer.src.services.SearchIndexService;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -45,6 +45,9 @@ public class MainController implements WebMvcConfigurer {
     @Autowired
     private LemmaService lemmaService;
 
+    @Autowired
+    private SearchIndexService searchIndexService;
+
     @GetMapping(value = {"/", "/index"})
     public String getMainPage(Model model) {
         model.addAttribute("pages", pageService.getAllPages());
@@ -59,12 +62,29 @@ public class MainController implements WebMvcConfigurer {
     @GetMapping(value = {"/{id}"})
     public String getPageById(@ModelAttribute("id") Integer id, Model model) {
         Page findPage = pageService.getPageById(id);
-        Map<String, Integer> indexedPage = pageService.indexingAllPages();
+        Map<String, Lemma> lemmas = searchIndexService.startIndexingPage(findPage);
+        model.addAttribute("lemmas", lemmas);
         model.addAttribute("findPage", findPage);
-//        model.addAttribute("indexedPage", indexedPage);
-        model.addAttribute("indexedPage", indexedPage);
-        lemmaService.saveAllLemmas();
         return "update_page";
+    }
+
+    @GetMapping(value = {"/lemmas"})
+    public String getAllLemma(Model model) {
+        model.addAttribute("lemmas", lemmaService.gelAllLemma());
+        return "lemmas";
+    }
+
+    @GetMapping(value = {"/deleteAllLemma"})
+    public String deleteAllLemma(Model model) {
+        lemmaService.deleteAllLemma();
+       return "redirect:/lemmas";
+    }
+
+    @GetMapping(value = {"/startCrawler"})
+    public ResponseEntity<Lemma> startCrawler(Model model) {
+        Map<String, Lemma> indexedPages = searchIndexService.indexingAllPages();
+        model.addAttribute("indexedPage", indexedPages);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PostMapping("/addUrl")
@@ -80,9 +100,4 @@ public class MainController implements WebMvcConfigurer {
 
     }
 
-    private boolean urlChecker(String url) {
-        Pattern urlPattern = Pattern.compile("(https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,})");
-        return
-                urlPattern.matcher(url).find();
-    }
 }

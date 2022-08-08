@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @ToString
+@Table(indexes = {@Index(name = "lemma_index", columnList = "lemma") })
 public class Lemma implements Comparable<Lemma> {
 
 
@@ -30,5 +31,21 @@ public class Lemma implements Comparable<Lemma> {
     @Override
     public int compareTo(Lemma o) {
         return this.getLemma().compareTo(o.getLemma());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Lemma lemma1 = (Lemma) o;
+
+        return lemma != null ? lemma.equals(lemma1.lemma) : lemma1.lemma == null;
+    }
+
+
+    public Lemma sum(Lemma lemma) {
+        lemma.setFrequency(this.frequency + lemma.frequency);
+        return lemma;
     }
 }

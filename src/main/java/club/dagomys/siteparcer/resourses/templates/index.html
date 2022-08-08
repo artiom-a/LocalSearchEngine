@@ -4,8 +4,8 @@
 <head>
     <meta charset="ISO-8859-1">
     <title>WEB-Crawler DAGOMYS</title>
-
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+    <link rel="icon" th:href="@{data:,}">
+    <link rel="stylesheet" th:href="@{https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css}"
           integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
 </head>
@@ -17,7 +17,8 @@
 
     <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Home</a>
     <a th:href="@{/addUrl}" class="btn btn-primary btn-sm mb-3"> Add URL </a>
-
+    <a th:href="@{/startCrawler}" class="btn btn-primary btn-sm mb-3"> Start crawler all pages </a>
+    <a th:href="@{/lemmas}" class="btn btn-primary btn-sm mb-3"> Show all lemma</a>
     <table border="1" class="table table-striped table-responsive-md">
         <thead>
         <tr>
