@@ -1,6 +1,8 @@
 package club.dagomys.lemmatisator.scr;
 
+import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
@@ -16,7 +18,7 @@ import java.util.stream.Collectors;
 public class LemmaCounter {
     private final LuceneMorphology russianMorphology = new RussianLuceneMorphology();
     private final LuceneMorphology englishMorphology = new EnglishLuceneMorphology();
-    private final Logger mainLogger = MainLog4jLogger.getInstance();
+    private final Logger mainLogger = LogManager.getLogger(LemmaCounter.class);
     private Map<String, Integer> wordsMap;
     private Set<String> lemmaSet;
     private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
@@ -24,12 +26,12 @@ public class LemmaCounter {
     private final Pattern russian = Pattern.compile("([А-яё]+)");
 
     public LemmaCounter() throws IOException {
-
+        wordsMap = new TreeMap<>();
     }
 
     public Map<String, Integer> countLemmas(String text) {
-        wordsMap = new TreeMap<>();
-        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]"," "));
+
+        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]", " "));
         List<String> replacedText = wordMatch.results()
                 .map(MatchResult::group)
                 .collect(Collectors.toList());
@@ -41,12 +43,13 @@ public class LemmaCounter {
 
         wordsMap = morphList.stream().map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
                 .collect(Collectors.toMap(l -> l.get(0), v -> 1, Integer::sum));
+        wordsMap.keySet().removeIf(l -> l.matches("\\b([A-z]{1,2})\\b")); //remove short 1 till 2 chars symbols
         return wordsMap;
     }
 
 
     public Set<String> getLemmaSet(String text) {
-        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]"," "));
+        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]", " "));
         lemmaSet = new TreeSet<>();
         /**
          * Breaking the whole text into words
@@ -60,7 +63,6 @@ public class LemmaCounter {
         Set<String> morphList = replacedText.stream()
                 .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
                 .collect(Collectors.toSet());
-        mainLogger.warn("\t\t" + morphList);
         /**
          Get set of normal lemmas
          */

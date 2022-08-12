@@ -7,6 +7,7 @@ import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @NoArgsConstructor
@@ -40,7 +41,7 @@ public class Lemma implements Comparable<Lemma> {
 
         Lemma lemma1 = (Lemma) o;
 
-        return lemma != null ? lemma.equals(lemma1.lemma) : lemma1.lemma == null;
+        return Objects.equals(lemma, lemma1.lemma);
     }
 
 

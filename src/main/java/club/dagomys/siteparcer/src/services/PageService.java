@@ -3,6 +3,7 @@ package club.dagomys.siteparcer.src.services;
 import club.dagomys.lemmatisator.scr.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.repos.PageRepository;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
@@ -16,16 +17,10 @@ import java.util.stream.Collectors;
 
 @Service
 public class PageService {
-    private final Logger mainLogger = MainLog4jLogger.getInstance();
+    private final Logger mainLogger = LogManager.getLogger(PageService.class);
 
     @Autowired
     private PageRepository pageRepository;
-
-    @Autowired
-    private FieldService fieldService;
-
-    @Autowired
-    private LemmaService lemmaService;
 
 
     public List<Page> getAllPages() {

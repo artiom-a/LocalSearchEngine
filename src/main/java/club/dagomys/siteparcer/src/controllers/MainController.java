@@ -1,40 +1,30 @@
 package club.dagomys.siteparcer.src.controllers;
 
-import club.dagomys.lemmatisator.scr.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.services.FieldService;
 import club.dagomys.siteparcer.src.services.LemmaService;
 import club.dagomys.siteparcer.src.services.PageService;
 import club.dagomys.siteparcer.src.services.SearchIndexService;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 
 @Controller
 //@RequestMapping("/frontend")
 public class MainController implements WebMvcConfigurer {
 
-    private Logger mainLogger = MainLog4jLogger.getInstance();
+    private Logger mainLogger = LogManager.getLogger(MainController.class);
 
     @Autowired
     private PageService pageService;
@@ -62,7 +52,7 @@ public class MainController implements WebMvcConfigurer {
     @GetMapping(value = {"/{id}"})
     public String getPageById(@ModelAttribute("id") Integer id, Model model) {
         Page findPage = pageService.getPageById(id);
-        Map<String, Lemma> lemmas = searchIndexService.startIndexingPage(findPage);
+        Map<String, Lemma> lemmas = lemmaService.startCountingLemmasOnPage(findPage);
         model.addAttribute("lemmas", lemmas);
         model.addAttribute("findPage", findPage);
         return "update_page";
@@ -77,12 +67,12 @@ public class MainController implements WebMvcConfigurer {
     @GetMapping(value = {"/deleteAllLemma"})
     public String deleteAllLemma(Model model) {
         lemmaService.deleteAllLemma();
-       return "redirect:/lemmas";
+        return "redirect:/lemmas";
     }
 
     @GetMapping(value = {"/startCrawler"})
     public ResponseEntity<Lemma> startCrawler(Model model) {
-        Map<String, Lemma> indexedPages = searchIndexService.indexingAllPages();
+        Map<String, Integer> indexedPages = lemmaService.lemmaFrequencyCounter();
         model.addAttribute("indexedPage", indexedPages);
         return new ResponseEntity<>(HttpStatus.OK);
     }

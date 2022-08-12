@@ -28,7 +28,7 @@
         <tbody>
         <tr th:each="lemma: ${lemmas}">
             <td th:text="${lemma.id}"></td>
-            <td th:text="${lemma}"></td>
+            <td th:text="${lemma.lemma}"></td>
             <td th:text="${lemma.frequency}"></td>
         </tr>
         </tbody>
