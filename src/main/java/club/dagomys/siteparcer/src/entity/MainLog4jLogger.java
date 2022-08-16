@@ -1,3 +1,4 @@
+/*
 package club.dagomys.siteparcer.src.entity;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,3 +19,4 @@ public class MainLog4jLogger {
         return MAIN_LOGGER;
     }
 }
+*/

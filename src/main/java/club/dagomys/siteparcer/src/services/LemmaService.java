@@ -48,15 +48,14 @@ public class LemmaService {
         lemmaRepository.deleteAll();
     }
 
-    public Lemma findLemma(String lemma) {
-        return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst().get();
+    public Optional<Lemma> findLemma(String lemma) {
+        return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
 
     private final Map<String, Lemma> lemmaMap = new TreeMap<>();
 
     public Map<String, Integer> lemmaFrequencyCounter() {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
-        Map<String, Lemma> lemmaStorage = new TreeMap<>();
         for (Page page : pageService.getAllPages()) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
             Map<String, Lemma> indexedPageMap = startCountingLemmasOnPage(page);
@@ -71,7 +70,6 @@ public class LemmaService {
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
         mainLogger.info(lemmaMap.size());
-        System.out.println(lemmaMap.get("светловка"));
         indexedPagesLemmas.forEach((key, value) -> saveLemma(new Lemma(key, value)));
         return indexedPagesLemmas;
     }
@@ -98,8 +96,7 @@ public class LemmaService {
     }
 
 
-    private Map<String, Lemma> lemmaCounting(Map<String, Lemma> inputMap) {
-
+    private void lemmaCounting(Map<String, Lemma> inputMap) {
         inputMap.forEach((key, value) -> {
             if (lemmaMap.containsKey(key)) {
                 lemmaMap.put(key, new Lemma(key, lemmaMap.get(key).getFrequency() + value.getFrequency()));
@@ -107,6 +104,5 @@ public class LemmaService {
                 lemmaMap.put(key, value);
             }
         });
-        return lemmaMap;
     }
 }

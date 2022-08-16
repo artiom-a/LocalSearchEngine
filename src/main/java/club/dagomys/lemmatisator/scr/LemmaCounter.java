@@ -1,9 +1,9 @@
 package club.dagomys.lemmatisator.scr;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
-import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.util.JsonUtils;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
@@ -30,11 +30,11 @@ public class LemmaCounter {
     }
 
     public Map<String, Integer> countLemmas(String text) {
-
-        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]", " "));
+        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]|`]", " "));
         List<String> replacedText = wordMatch.results()
                 .map(MatchResult::group)
                 .collect(Collectors.toList());
+        mainLogger.info(replacedText);
 
         List<String> morphList = replacedText.stream()
                 .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
@@ -49,7 +49,7 @@ public class LemmaCounter {
 
 
     public Set<String> getLemmaSet(String text) {
-        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]]", " "));
+        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]|`]", " "));
         lemmaSet = new TreeSet<>();
         /**
          * Breaking the whole text into words

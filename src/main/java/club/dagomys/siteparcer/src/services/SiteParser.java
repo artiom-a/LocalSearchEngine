@@ -1,8 +1,8 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
-import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
 import lombok.NoArgsConstructor;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 public class SiteParser extends RecursiveTask<Link> {
     private Link rootURL;
-    private static Logger mainLogger = MainLog4jLogger.getInstance();
+    private static final Logger mainLogger = LogManager.getLogger(SiteParser.class);
 
     public SiteParser(Link URL) throws IOException {
         this.rootURL = URL;

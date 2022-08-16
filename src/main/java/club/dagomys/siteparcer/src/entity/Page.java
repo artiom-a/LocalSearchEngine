@@ -24,6 +24,7 @@ public class Page implements Comparable<Page> {
     private String relPath;
     @Column(name = "code")
     private int statusCode;
+    @ToString.Exclude
     @Column(columnDefinition = "MEDIUMTEXT")
     @Type(type = "org.hibernate.type.TextType")
     private String content;

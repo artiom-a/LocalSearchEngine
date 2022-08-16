@@ -1,15 +1,12 @@
 package club.dagomys.siteparcer.src.controllers;
 
 import club.dagomys.siteparcer.src.entity.*;
-import club.dagomys.siteparcer.src.services.FieldService;
-import club.dagomys.siteparcer.src.services.LemmaService;
-import club.dagomys.siteparcer.src.services.PageService;
-import club.dagomys.siteparcer.src.services.SearchIndexService;
+import club.dagomys.siteparcer.src.entity.request.SearchRequest;
+import club.dagomys.siteparcer.src.entity.request.URLRequest;
+import club.dagomys.siteparcer.src.services.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
@@ -17,7 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.validation.Valid;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 @Controller
@@ -38,10 +38,19 @@ public class MainController implements WebMvcConfigurer {
     @Autowired
     private SearchIndexService searchIndexService;
 
+    @Autowired
+    private SearchService searchService;
+
     @GetMapping(value = {"/", "/index"})
     public String getMainPage(Model model) {
         model.addAttribute("pages", pageService.getAllPages());
         return "index";
+    }
+
+    @GetMapping("/search")
+    public String getSearchPage(Model model, @ModelAttribute("searchRequest") SearchRequest searchRequest) {
+//        model.addAttribute("pages", pageService.getAllPages());
+        return "search";
     }
 
     @GetMapping(value = "/addUrl")
@@ -71,10 +80,9 @@ public class MainController implements WebMvcConfigurer {
     }
 
     @GetMapping(value = {"/startCrawler"})
-    public ResponseEntity<Lemma> startCrawler(Model model) {
-        Map<String, Integer> indexedPages = lemmaService.lemmaFrequencyCounter();
-        model.addAttribute("indexedPage", indexedPages);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public String startCrawler(Model model) {
+        searchIndexService.startIndexingAllPages();
+        return "redirect:/lemmas";
     }
 
     @PostMapping("/addUrl")
@@ -86,6 +94,21 @@ public class MainController implements WebMvcConfigurer {
         } else {
             mainLogger.info(errors.getAllErrors());
             return "add_url";
+        }
+
+    }
+
+    @PostMapping("/search")
+    public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model) {
+        if (!errors.hasErrors()) {
+            mainLogger.info(searchRequest);
+            List<Lemma> searchLemma = searchService.search(searchRequest.getSearchLine());
+            List<SearchIndex> findIndexList = searchService.findIndexedPage(searchLemma);
+            findIndexList.forEach(System.out::println);
+            return "redirect:/search";
+        } else {
+            mainLogger.info(errors.getAllErrors());
+            return "search";
         }
 
     }

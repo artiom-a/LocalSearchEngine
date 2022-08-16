@@ -1,7 +1,7 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
-import club.dagomys.siteparcer.src.entity.MainLog4jLogger;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +16,7 @@ import java.util.concurrent.ForkJoinTask;
 
 @Component
 public class SiteParserRunner {
+    private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     @Autowired
     private PageService pageService;
     private final String URL;
@@ -26,8 +27,6 @@ public class SiteParserRunner {
         this.pageService = service;
         this.URL = URL;
     }
-
-    Logger mainLogger = MainLog4jLogger.getInstance();
 
     public void run(String... args) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy hh:mm:ss");
