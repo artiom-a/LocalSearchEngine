@@ -26,9 +26,9 @@ class LemmaCounterTest {
     @BeforeEach
     void setUp() {
         try {
-            englishLemmaCounter = new LemmaCounter();
-            russianLemmaCounter = new LemmaCounter();
-                        otherLangLemmaCounter = new LemmaCounter();
+            englishLemmaCounter = new LemmaCounter(englishText);
+            russianLemmaCounter = new LemmaCounter(russianText);
+            otherLangLemmaCounter = new LemmaCounter(french);
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
         }
@@ -37,21 +37,21 @@ class LemmaCounterTest {
     @Test
     @DisplayName("Поиск лемм в русскоязычном тексте")
     void getWordsMap_RussianLemmas() {
-        long russianLemmasCount = russianLemmaCounter.countLemmas(russianText).entrySet().size();
+        long russianLemmasCount = russianLemmaCounter.countLemmas().entrySet().size();
         assertEquals(11, russianLemmasCount);
     }
 
     @Test
     @DisplayName("Поиск лемм в англоязычном тексте")
     void getWordsMap_EnglishLemmas(){
-        long englishLemmasCount = englishLemmaCounter.countLemmas(englishText).entrySet().size();
+        long englishLemmasCount = englishLemmaCounter.countLemmas().entrySet().size();
         assertEquals(40, englishLemmasCount);
     }
 
     @Test
     @DisplayName("Поиск лемм в тексте с неопределенным языком")
     void getWordsMap_OtherLangLemmas(){
-        assertNull(otherLangLemmaCounter.countLemmas(french));
+        assertNull(otherLangLemmaCounter.countLemmas());
     }
 
 

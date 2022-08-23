@@ -40,17 +40,6 @@ public class SearchIndexService {
         return indexList;
     }
 
-//    public List<SearchIndex> findIndexByLemma(Lemma lemma) {
-//        List<SearchIndex> findIndexes = new ArrayList<>();
-//        for (SearchIndex index : getAllIndexes()) {
-//            if (index.getLemma().equals(lemma)) {
-//                findIndexes.add(index);
-//                return findIndexes;
-//            }
-//        }
-//        return findIndexes;
-//    }
-
     private Map<String, Float> startIndexingLemmasOnPage(@NotNull Page indexingPage) {
         Map<String, Float> lemmas = new TreeMap<>();
         Field title = fieldService.getFieldByName(FieldSelector.TITLE);
@@ -58,19 +47,18 @@ public class SearchIndexService {
         if (indexingPage.getContent() != null) {
             Document doc = Jsoup.parse(indexingPage.getContent());
             try {
-                LemmaCounter lemmaCounter = new LemmaCounter();
-                Map<String, Integer> titleLemmas = lemmaCounter.countLemmas(doc.getElementsByTag(title.getName()).text());
-                Map<String, Integer> bodyLemmas = lemmaCounter.countLemmas(doc.getElementsByTag(body.getName()).text());
+                LemmaCounter titleCounter = new LemmaCounter(doc.getElementsByTag(title.getName()).text());
+                LemmaCounter bodyCounter = new LemmaCounter(doc.getElementsByTag(body.getName()).text());
+                Map<String, Integer> titleLemmas = titleCounter.countLemmas();
+                Map<String, Integer> bodyLemmas = bodyCounter.countLemmas();
                 bodyLemmas.forEach((key, value) -> {
+                    float rank;
                     if (titleLemmas.containsKey(key)) {
-                        float R = title.getWeight() * titleLemmas.get(key) + value * body.getWeight();
-                        lemmas.put(key, R);
-//                        System.out.println(key + "\t" + R + " count " + value + " title count " + titleLemmas.get(key));
+                        rank = title.getWeight() * titleLemmas.get(key) + value * body.getWeight();
                     } else {
-                        float R = bodyLemmas.get(key) * body.getWeight();
-                        lemmas.put(key, R);
-//                        System.out.println(key + "\t" + R + " count " + titleLemmas.get(key) + " body count " + value);
+                        rank = bodyLemmas.get(key) * body.getWeight();
                     }
+                    lemmas.put(key, rank);
                 });
             } catch (IOException e) {
                 System.out.println(e.getMessage());
@@ -90,13 +78,21 @@ public class SearchIndexService {
             indexedPageMap.forEach((key, value) -> {
                 Lemma findLemma = lemmaService.findLemma(key).get();
                 saveIndex(new SearchIndex(page, findLemma, value));
-                mainLogger.warn(findLemma + " indexing is complete");
             });
+            mainLogger.warn(page.getRelPath() + " indexing is complete");
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
     }
 
     public List<SearchIndex> findIndexByLemma(Lemma lemma) {
-        return searchIndexRepository.findByLemma(lemma);
+        return searchIndexRepository.findByLemmaOrderByRankDesc(lemma);
+    }
+
+    public List<SearchIndex> findIndexByPage(Page page) {
+        return searchIndexRepository.findByPage(page);
+    }
+
+    public SearchIndex findIndexByPageAndLemma(Page page, Lemma lemma) {
+        return searchIndexRepository.findByPageAndLemma(page, lemma);
     }
 }

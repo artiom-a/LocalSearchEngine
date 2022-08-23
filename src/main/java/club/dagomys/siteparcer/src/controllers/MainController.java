@@ -14,10 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.validation.Valid;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 @Controller
@@ -25,6 +22,7 @@ import java.util.Set;
 public class MainController implements WebMvcConfigurer {
 
     private Logger mainLogger = LogManager.getLogger(MainController.class);
+    private List<Page> findIndexList = new ArrayList<>();
 
     @Autowired
     private PageService pageService;
@@ -49,7 +47,7 @@ public class MainController implements WebMvcConfigurer {
 
     @GetMapping("/search")
     public String getSearchPage(Model model, @ModelAttribute("searchRequest") SearchRequest searchRequest) {
-//        model.addAttribute("pages", pageService.getAllPages());
+        model.addAttribute("indexList", findIndexList);
         return "search";
     }
 
@@ -101,10 +99,7 @@ public class MainController implements WebMvcConfigurer {
     @PostMapping("/search")
     public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model) {
         if (!errors.hasErrors()) {
-            mainLogger.info(searchRequest);
-            List<Lemma> searchLemma = searchService.search(searchRequest.getSearchLine());
-            List<SearchIndex> findIndexList = searchService.findIndexedPage(searchLemma);
-            findIndexList.forEach(System.out::println);
+            findIndexList = searchService.search(searchRequest.getSearchLine());
             return "redirect:/search";
         } else {
             mainLogger.info(errors.getAllErrors());

@@ -11,6 +11,7 @@
 <div class="container">
     <h1>WEB search</h1>
     <hr>
+        <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Back to main</a>
     <form action="#" th:action="@{/search}" method="POST" th:object="${searchRequest}">
         <input type="text" th:field="*{searchLine}" placeholder="add url" class="form-control mb-4 col-4">
         <div th:each="err : ${#fields.errors('searchLine')}">
@@ -20,8 +21,28 @@
     </form>
 
     <hr>
-
-    <!--    <a th:href="@{/}"> Back to shop List</a>-->
+    <div class="container my-2">
+        <table border="1" class="table table-striped table-responsive-md">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>ID</th>
+                <th>Page</th>
+                <th>Lemma</th>
+                <th>Rate</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="index, stat: ${indexList}">
+                <td th:text="${stat.index + 1}"></td>
+                <td th:text="${index.id}"></td>
+                <td th:text="${index.relPath}"></td>
+<!--                <td th:text="${index.lemma.lemma}"></td>-->
+<!--                <td th:text="${index.rank}"></td>-->
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 </body>
 </html>

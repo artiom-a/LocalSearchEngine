@@ -19,6 +19,8 @@ import java.util.*;
 @Service
 public class LemmaService {
     private final Logger mainLogger = LogManager.getLogger(LemmaService.class);
+    private final Map<String, Lemma> lemmaMap = new TreeMap<>();
+
     @Autowired
     private LemmaRepository lemmaRepository;
 
@@ -52,8 +54,6 @@ public class LemmaService {
         return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
 
-    private final Map<String, Lemma> lemmaMap = new TreeMap<>();
-
     public Map<String, Integer> lemmaFrequencyCounter() {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
         for (Page page : pageService.getAllPages()) {
@@ -79,9 +79,10 @@ public class LemmaService {
         if (indexingPage.getContent() != null) {
             Document doc = Jsoup.parse(indexingPage.getContent());
             try {
-                LemmaCounter lemmaCounter = new LemmaCounter();
+
                 for (Field field : fieldService.getAllFields()) {
-                    lemmaCounter.countLemmas(doc.getElementsByTag(field.getName()).text()).forEach((key, value) -> {
+                    LemmaCounter lemmaCounter = new LemmaCounter(doc.getElementsByTag(field.getName()).text());
+                    lemmaCounter.countLemmas().forEach((key, value) -> {
                         lemmas.merge(key, new Lemma(key, value), Lemma::sum);
                     });
                 }

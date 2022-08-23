@@ -24,48 +24,33 @@ public class LemmaCounter {
     private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
     private final Pattern english = Pattern.compile("([A-z]+)");
     private final Pattern russian = Pattern.compile("([А-яё]+)");
+    private Matcher wordMatch;
+    private List<String> replacedText;
 
-    public LemmaCounter() throws IOException {
+    public LemmaCounter(String text) throws IOException {
+        wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]|`]", " "));
+        replacedText = wordMatch.results()
+                .map(MatchResult::group).toList();
         wordsMap = new TreeMap<>();
     }
 
-    public Map<String, Integer> countLemmas(String text) {
-        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]|`]", " "));
-        List<String> replacedText = wordMatch.results()
-                .map(MatchResult::group)
-                .collect(Collectors.toList());
-        mainLogger.info(replacedText);
-
+    public Map<String, Integer> countLemmas() {
         List<String> morphList = replacedText.stream()
-                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
-                .collect(Collectors.toList());
-        mainLogger.warn("\t\t" + morphList);
-
-        wordsMap = morphList.stream().map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
+                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph)).toList();
+        wordsMap = morphList.stream()
+                .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
                 .collect(Collectors.toMap(l -> l.get(0), v -> 1, Integer::sum));
         wordsMap.keySet().removeIf(l -> l.matches("\\b([A-z]{1,2})\\b")); //remove short 1 till 2 chars symbols
         return wordsMap;
     }
 
 
-    public Set<String> getLemmaSet(String text) {
-        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]|`]", " "));
+    public Set<String> getLemmaSet() {
         lemmaSet = new TreeSet<>();
-        /**
-         * Breaking the whole text into words
-         */
-        List<String> replacedText = wordMatch.results()
-                .map(MatchResult::group)
-                .collect(Collectors.toList());
-        /**
-         * Form a list of English and Russian morphs. Cleaning from service parts of speech
-         */
         Set<String> morphList = replacedText.stream()
                 .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
                 .collect(Collectors.toSet());
-        /**
-         Get set of normal lemmas
-         */
+
         lemmaSet = morphList.stream()
                 .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
                 .flatMap(Collection::stream)
@@ -87,7 +72,8 @@ public class LemmaCounter {
                         morph.contains("МЕЖД") |
                         morph.contains("МС") |
                         morph.contains("ПРЕДЛ") |
-                        morph.contains("КР_ПРИЛ");
+                        morph.contains("КР_ПРИЛ") |
+                        morph.contains("ЧАСТ");
             }
         } else if (Objects.equals(getLanguage(word), "EN")) {
 //            mainLogger.info("EN \t" + word);

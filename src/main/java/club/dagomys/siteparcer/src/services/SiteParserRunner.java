@@ -29,6 +29,7 @@ public class SiteParserRunner {
     }
 
     public void run(String... args) {
+        setStarted(true);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy hh:mm:ss");
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
@@ -42,6 +43,7 @@ public class SiteParserRunner {
             mainLogger.warn("finish time " + dateFormat.format(finishDate.getTime()));
             Duration duration = Duration.between(startTime.toInstant(), finishDate.toInstant());
             mainLogger.info("Duration " + duration.toString());
+            setStarted(false);
         } catch (IOException e) {
             System.out.println(e.getMessage());
 
