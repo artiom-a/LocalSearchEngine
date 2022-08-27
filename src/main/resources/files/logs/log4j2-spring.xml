@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <appenders>
+        <File  name="mainLogger" fileName="src/main/resources/files/logs/properties_logs.log" append="true" >
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" disableAnsi="false"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File >
+
+        <Console name="Console" target="SYSTEM_OUT" >
+            <PatternLayout pattern="%highlight{%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n}" disableAnsi="false"/>
+        </Console>
+    </appenders>
+
+    <loggers>
+        <Logger name="mainLogger" level="INFO">
+            <appender-ref ref="mainLogger"/>
+        </Logger>
+
+        <root level="info">
+            <appender-ref ref="Console"/>
+        </root>
+    </loggers>
+</Configuration>

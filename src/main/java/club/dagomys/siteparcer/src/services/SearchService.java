@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.CriteriaBuilder;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,28 +36,53 @@ public class SearchService {
 
         for (Lemma lemma : findLemmas) {
             if (!pageIndexes.isEmpty() && lemma != minFreqLemma) {
-                mainLogger.info(lemma.getLemma() + " " + findPages);
                 List<SearchIndex> secondIndexSearch = searchIndexService.findIndexByLemma(lemma);
                 List<Page> tempList = new ArrayList<>();
                 secondIndexSearch.forEach(indexing -> tempList.add(indexing.getPage()));
-                mainLogger.info(lemma.getLemma() + " temp - " + tempList);
                 findPages.retainAll(tempList);
-                mainLogger.info(lemma.getLemma() + " after - " + findPages);
             }
         }
-        pageIndexes.forEach(System.out::println);
-//        findPages.forEach(index -> {
-//            searchIndexService.findIndexByPage(index.getPage()).forEach(System.out::println);
-//            findLemmas.forEach(lemma -> {
-//                mainLogger.info(lemma);
-//                if ((searchIndexService.findIndexByPage(index.getPage()).contains(lemma))) {
-//                    list.add(index);
-//                }
-//            });
-//        });
-//        list.forEach(System.out::println);
-//        findPages.forEach(System.out::println);
+        getRelevance(findPages, findLemmas);
+
         return findPages;
+    }
+
+    private float getAbsRelevance(Page page, List<Lemma> lemmas) {
+        float r = 0f;
+        for (Lemma lemma : lemmas) {
+            SearchIndex searchIndex = null;
+            try {
+                searchIndex = searchIndexService.findIndexByPageAndLemma(page, lemma);
+                r = r + searchIndex.getRank();
+                mainLogger.info(String.format("%.2f", r) + " \t" + searchIndex.getLemma() + " ->>> " + searchIndex.getRank());
+            } catch (Throwable e) {
+                mainLogger.error(e.getMessage());
+            }
+
+        }
+        return r;
+    }
+
+    private float getRelevance (List<Page> pageList, List<Lemma> lemmaList){
+        float maxRel = 0f;
+        Map<Page, Float> pagesForRelevance = new TreeMap<>();
+        for (Page page : pageList) {
+            float r = getAbsRelevance(page, lemmaList);
+            pagesForRelevance.put(page, r);
+            if (r > maxRel)
+                maxRel = r;
+            mainLogger.info(page.getRelPath() + " relevance " + String.format("%.2f", r));
+        }
+
+        for (Map.Entry<Page, Float> abs : pagesForRelevance.entrySet()) {
+            pagesForRelevance.put(abs.getKey(), abs.getValue() / maxRel);
+        }
+        mainLogger.info("REL MAX " + maxRel);
+        mainLogger.warn("pagel store size " + pagesForRelevance.size());
+        pagesForRelevance.forEach((key, value)->{
+            mainLogger.warn(key.getRelPath() + "\t ==> " + value);
+        });
+        return maxRel;
     }
 
     private List<Lemma> getLemmasFromRequest(String searchLine) {
@@ -108,51 +132,3 @@ public class SearchService {
             return lemmaList.stream().min(Comparator.comparing(Lemma::getFrequency)).orElse(null);
     }
 }
-
-/*
-
-    public Map<Page, Double> searching(String searchLine) {
-        HashMap<Page, Double> pageRelevance = new HashMap<>();
-        List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine));
-        Lemma minFreqLemma = getMinLemma(findLemmas);
-        List<Page> pageIndexes = new ArrayList<>();
-        if (minFreqLemma != null) {
-            List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
-            indexingList.forEach(indexing -> pageIndexes.add(indexing.getPage()));
-            for (Lemma lemma : findLemmas) {
-                if (!pageIndexes.isEmpty() && lemma != minFreqLemma) {
-                    List<SearchIndex> indexingList2 = searchIndexService.findIndexByLemma(lemma);
-                    List<Page> tempList = new ArrayList<>();
-                    indexingList2.forEach(index -> tempList.add(index.getPage()));
-                    pageIndexes.retainAll(tempList);
-                }
-            }
-            Map<Page, Double> pageAbsRelevance = new HashMap<>();
-
-            double maxRel = 0.0;
-            for (Page p : pageIndexes) {
-                Page opPage;
-                opPage = pageService.getPageById(p.getId());
-                if (opPage != null) {
-                    double r = getAbsRelevance(opPage, findLemmas);
-                    pageAbsRelevance.put(opPage, r);
-                    if (r > maxRel)
-                        maxRel = r;
-                }
-            }
-            for (Map.Entry<Page, Double> abs : pageAbsRelevance.entrySet()) {
-                pageRelevance.put(abs.getKey(), abs.getValue() / maxRel);
-            }
-        }
-        mainLogger.info(pageRelevance);
-        return pageRelevance;
-    }
-
-    private double getAbsRelevance(Page page, List<Lemma> lemmas){
-        double r = 0.0;
-        for (Lemma lemma : lemmas) {
-            SearchIndex indexing = searchIndexService.findIndexByPageAndLemma(page, lemma);
-            r = r + indexing.getRank();
-        }
-        return r;
-    }*/

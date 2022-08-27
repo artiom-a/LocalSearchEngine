@@ -11,6 +11,7 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
@@ -92,7 +93,8 @@ public class SearchIndexService {
         return searchIndexRepository.findByPage(page);
     }
 
-    public SearchIndex findIndexByPageAndLemma(Page page, Lemma lemma) {
-        return searchIndexRepository.findByPageAndLemma(page, lemma);
+    public SearchIndex findIndexByPageAndLemma(Page page, Lemma lemma) throws Throwable {
+        return searchIndexRepository.findByPageAndLemma(page, lemma).orElseThrow(()->
+                new EntityNotFoundException("SearchIndex object is not found " + page.getRelPath() + "\t" + lemma.getLemma()));
     }
 }
