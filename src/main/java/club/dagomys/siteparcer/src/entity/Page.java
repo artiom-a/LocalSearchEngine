@@ -5,8 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
+import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
+import java.util.Comparator;
 import java.util.List;
 
 @Data
@@ -15,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(indexes = {@Index(name = "page_index", columnList = "path") })
-public class Page implements Comparable<Page> {
+public class Page{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,8 +36,10 @@ public class Page implements Comparable<Page> {
         statusCode = 0;
     }
 
-    @Override
-    public int compareTo(Page o) {
-        return this.content.compareTo(o.content);
-    }
+//    @Override
+//    public int compareTo(@NotNull Page o) {
+//        return Comparator.comparing(Page::getRelPath)
+//                .thenComparing(Page::getContent)
+//                .compare(this, o);
+//    }
 }

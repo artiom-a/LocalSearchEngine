@@ -42,9 +42,7 @@ public class SearchService {
                 findPages.retainAll(tempList);
             }
         }
-        getRelevance(findPages, findLemmas);
-
-        return findPages;
+        return getRelRelevance(findPages, findLemmas).keySet().stream().toList();
     }
 
     private float getAbsRelevance(Page page, List<Lemma> lemmas) {
@@ -54,7 +52,7 @@ public class SearchService {
             try {
                 searchIndex = searchIndexService.findIndexByPageAndLemma(page, lemma);
                 r = r + searchIndex.getRank();
-                mainLogger.info(String.format("%.2f", r) + " \t" + searchIndex.getLemma() + " ->>> " + searchIndex.getRank());
+//                mainLogger.info(String.format("%.2f", r) + " \t" + searchIndex.getLemma() + " ->>> " + searchIndex.getRank());
             } catch (Throwable e) {
                 mainLogger.error(e.getMessage());
             }
@@ -63,9 +61,10 @@ public class SearchService {
         return r;
     }
 
-    private float getRelevance (List<Page> pageList, List<Lemma> lemmaList){
+    private Map<Page, Float> getRelRelevance(List<Page> pageList, List<Lemma> lemmaList) {
         float maxRel = 0f;
-        Map<Page, Float> pagesForRelevance = new TreeMap<>();
+        Map<Page, Float> sortedMap = new LinkedHashMap<>();
+        Map<Page, Float> pagesForRelevance = new LinkedHashMap<>();
         for (Page page : pageList) {
             float r = getAbsRelevance(page, lemmaList);
             pagesForRelevance.put(page, r);
@@ -77,12 +76,18 @@ public class SearchService {
         for (Map.Entry<Page, Float> abs : pagesForRelevance.entrySet()) {
             pagesForRelevance.put(abs.getKey(), abs.getValue() / maxRel);
         }
+        pagesForRelevance.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEachOrdered(x -> sortedMap.put(x.getKey(), x.getValue()));
         mainLogger.info("REL MAX " + maxRel);
-        mainLogger.warn("pagel store size " + pagesForRelevance.size());
-        pagesForRelevance.forEach((key, value)->{
+        mainLogger.warn("page store size " + sortedMap.size());
+        sortedMap.forEach((key, value) -> {
             mainLogger.warn(key.getRelPath() + "\t ==> " + value);
         });
-        return maxRel;
+
+
+        return sortedMap;
     }
 
     private List<Lemma> getLemmasFromRequest(String searchLine) {
