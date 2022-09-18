@@ -1,12 +1,15 @@
 package club.dagomys.lemmatisator.scr;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
+import club.dagomys.siteparcer.src.entity.Page;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.util.JsonUtils;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.util.*;
@@ -26,12 +29,17 @@ public class LemmaCounter {
     private final Pattern russian = Pattern.compile("([А-яё]+)");
     private Matcher wordMatch;
     private List<String> replacedText;
+    private String text;
 
     public LemmaCounter(String text) throws IOException {
-        wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[_*|\\/\\\\*|\\[\\]|`]", " "));
+        this.text = text;
+        wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " "));
         replacedText = wordMatch.results()
                 .map(MatchResult::group).toList();
         wordsMap = new TreeMap<>();
+    }
+
+    public LemmaCounter() throws IOException {
     }
 
     public Map<String, Integer> countLemmas() {
@@ -44,6 +52,37 @@ public class LemmaCounter {
         return wordsMap;
     }
 
+    public ArrayList<Integer> findLemmaIndexInText(Page page, Lemma lemma) {
+        ArrayList<Integer> listOfIndexes = new ArrayList<>();
+        Document document = Jsoup.parse(page.getContent());
+
+        List<String> pageWordList = wordPatterRegexp
+                .matcher(document.text().toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " "))
+                .results()
+                .map(MatchResult::group).toList();
+
+        mainLogger.info("list[]\t" + pageWordList);
+        int index = 0;
+        for (String s1 : pageWordList) {
+            List<String> lemmas = new ArrayList<>();
+            try {
+                lemmas = pageWordList.stream()
+                        .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+                mainLogger.debug("lemmas \t" + lemmas);
+            } catch (Exception e) {
+                mainLogger.debug("Ошибка морфологического анализа. Пропущенные символы: " + s1);
+            }
+            for (String s2 : lemmas) {
+                if (s2.equals(lemma.getLemma())) {
+                    listOfIndexes.add(index);
+                }
+            }
+            index += s1.length() + 1;
+        }
+        return listOfIndexes;
+    }
 
     public Set<String> getLemmaSet() {
         lemmaSet = new TreeSet<>();

@@ -99,7 +99,7 @@ public class MainController implements WebMvcConfigurer {
     @PostMapping("/search")
     public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model) {
         if (!errors.hasErrors()) {
-            findIndexList = searchService.search(searchRequest.getSearchLine());
+            findIndexList = searchService.search(searchRequest);
             return "redirect:/search";
         } else {
             mainLogger.info(errors.getAllErrors());
