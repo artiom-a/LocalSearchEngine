@@ -60,27 +60,19 @@ public class LemmaCounter {
                 .matcher(document.text().toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " "))
                 .results()
                 .map(MatchResult::group).toList();
-
+        System.out.println(pageWordList);
         mainLogger.info("list[]\t" + pageWordList);
         int index = 0;
-        for (String s1 : pageWordList) {
-            List<String> lemmas = new ArrayList<>();
-            try {
-                lemmas = pageWordList.stream()
-                        .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
-                mainLogger.debug("lemmas \t" + lemmas);
-            } catch (Exception e) {
-                mainLogger.debug("Ошибка морфологического анализа. Пропущенные символы: " + s1);
-            }
+        List<String> lemmas = pageWordList.stream()
+                .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
+                .flatMap(Collection::stream).toList();
+
             for (String s2 : lemmas) {
                 if (s2.equals(lemma.getLemma())) {
                     listOfIndexes.add(index);
                 }
             }
-            index += s1.length() + 1;
-        }
+        System.out.println(lemmas);
         return listOfIndexes;
     }
 

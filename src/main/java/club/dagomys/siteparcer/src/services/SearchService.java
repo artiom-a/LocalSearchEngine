@@ -6,6 +6,7 @@ import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
 import club.dagomys.siteparcer.src.entity.request.SearchResponse;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -35,6 +36,7 @@ public class SearchService {
     private LemmaCounter counter;
 
     public List<Page> search(SearchRequest searchLine) {
+        mainLogger.debug("Поисковый запрос \t" + searchLine);
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
@@ -50,17 +52,19 @@ public class SearchService {
                 findPages.retainAll(tempList);
             }
         }
-        getRelRelevance(findPages, findLemmas).forEach((key, value) -> {
-            SearchResponse response = getResponse(key, value, searchLine.getSearchLine());
-            mainLogger.warn(response);
+        Map<Page, Float> pagesForRelevance = getRelRelevance(findPages, findLemmas);
+        pagesForRelevance.forEach((key, value) -> {
+            SearchResponse response = getResponse(key, value, findLemmas);
+            mainLogger.warn("RESPONSE \t" + new SearchResponse(key.getRelPath(), getTitle(key), getSnippet(key, findLemmas), value));
+//            mainLogger.debug("RESPONSE " + response);
         });
 
-        return getRelRelevance(findPages, findLemmas).keySet().stream().toList();
+        return pagesForRelevance.keySet().stream().toList();
     }
 
-    private SearchResponse getResponse(Page page, float relevance, String searchLine) {
+    private SearchResponse getResponse(Page page, float relevance, List<Lemma> lemmas) {
 
-        return new SearchResponse(page.getRelPath(), getTitle(page), getSnippet(page, searchLine), relevance);
+        return new SearchResponse(page.getRelPath(), getTitle(page), getSnippet(page, lemmas), relevance);
     }
 
     private String getTitle(Page page) {
@@ -73,57 +77,30 @@ public class SearchService {
     }
 
 
-    private String getSnippet(Page page, String searchLine) {
-
-/*        LemmaCounter analyzer;
-        try {
-            analyzer = new LemmaCounter(request);
-        } catch (Exception e) {
-            mainLogger.warn(" \t" + e.getMessage());
-        }*/
-        List<Lemma> requestLemma = getLemmasFromRequest(searchLine);
-        String string = "";
+    private String getSnippet(Page page, List<Lemma> requestLemmas) {
+        StringBuilder string = new StringBuilder();
         Document document = Jsoup.parse(page.getContent());
-//        Elements titleElements = document.select("title");
-//        Elements bodyElements = document.select("body");
-//        StringBuilder builder = new StringBuilder();
-//        titleElements.forEach(element -> builder.append(element.text()).append(" ").append("\n"));
-//        bodyElements.forEach(element -> builder.append(element.text()).append(" "));
-        if (!document.text().isEmpty()) {
-            string = document.text();
-        }
-
-//        List<TreeSet<Integer>> indexesList = getSearchingIndexes(string);
-//        StringBuilder builder1 = new StringBuilder();
-//        for (TreeSet<Integer> set : indexesList) {
-//            int from = set.first();
-//            int to = set.last();
-//            Pattern pattern = Pattern.compile("\\p{Punct}|\\s");
-//            Matcher matcher = pattern.matcher(string.substring(to));
-//            int offset = 0;
-//            if (matcher.find()) {
-//                offset = matcher.end();
-//            }
-//            builder1.append("<b>")
-//                    .append(string, from, to + offset)
-//                    .append("</b>");
-//            if (!((string.length() - to) < 30)) {
-//                builder1.append(string, to + offset, string.indexOf(" ", to + offset + 30))
-//                        .append("... ");
-//            }
-//        }
-        return string;
+        List<Integer> searchIndexes = new ArrayList<>();
+        requestLemmas.forEach(lemma -> {
+            searchIndexes.addAll(KMPSearch(document.text(), lemma));
+//            searchIndexes.addAll(counter.findLemmaIndexInText(page, lemma));
+        });
+        searchIndexes.forEach(index -> {
+            if (!document.text().isEmpty()) {
+                string.append(document.text(), index, index + 30);
+                string.append(" ");
+            }
+        });
+        return string.toString();
     }
 
     private float getAbsRelevance(Page page, List<Lemma> lemmas) {
         float r = 0f;
         for (Lemma lemma : lemmas) {
             SearchIndex searchIndex = null;
-            mainLogger.warn(counter.findLemmaIndexInText(page, lemma));
             try {
                 searchIndex = searchIndexService.findIndexByPageAndLemma(page, lemma);
                 r = r + searchIndex.getRank();
-//                mainLogger.info(String.format("%.2f", r) + " \t" + searchIndex.getLemma() + " ->>> " + searchIndex.getRank());
             } catch (Throwable e) {
                 mainLogger.error(e.getMessage());
             }
@@ -151,7 +128,7 @@ public class SearchService {
                 .stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .forEachOrdered(pageFloatEntry -> sortedMap.put(pageFloatEntry.getKey(), pageFloatEntry.getValue()));
-        mainLogger.info("REL MAX " + maxRel);
+        mainLogger.info("RELEVANCE MAX \t" + maxRel);
         mainLogger.warn("page store size " + sortedMap.size());
         sortedMap.forEach((key, value) -> {
             mainLogger.warn(key.getRelPath() + "\t ==> " + value);
@@ -175,12 +152,13 @@ public class SearchService {
             e.printStackTrace();
         }
         sortLemmasByFrequency(findLemmas);
+        mainLogger.info("FIND LEMMAS \t" + findLemmas);
         return findLemmas;
     }
 
     private Set<Lemma> deleteCommonLemmas(List<Lemma> lemmas) {
         Set<Lemma> modifyLemmaList = new TreeSet<>(lemmas);
-        final double percent = 0.99;
+        final double percent = 1;
         double frequency = pageService.getAllPages().size() * percent;
         lemmas.removeIf(l -> l.getFrequency() > frequency);
         return modifyLemmaList;
@@ -206,5 +184,43 @@ public class SearchService {
             return lemmaList.get(0);
         } else
             return lemmaList.stream().min(Comparator.comparing(Lemma::getFrequency)).orElse(null);
+    }
+
+    private int[] prefixFunction(Lemma lemma) {
+        String pattern = lemma.getLemma();
+        int[] values = new int[pattern.length()];
+        for (int i = 1; i < pattern.length(); i++) {
+            int j = 0;
+            while (i + j < pattern.length() && pattern.charAt(j) == pattern.charAt(i + j)) {
+                values[i + j] = Math.max(values[i + j], j + 1);
+                j++;
+            }
+        }
+        return values;
+    }
+
+    private ArrayList<Integer> KMPSearch(String text, Lemma lemma) {
+        String searchLine = lemma.getLemma();
+        ArrayList<Integer> foundIndexes = new ArrayList<>();
+        int[] prefixFunction = prefixFunction(lemma);
+        int i = 0;
+        int j = 0;
+        while (i < text.length()) {
+            if (searchLine.charAt(j) == text.charAt(i)) {
+                j++;
+                i++;
+            }
+            if (j == searchLine.length()) {
+                foundIndexes.add(i - j);
+                j = prefixFunction[j - 1];
+            } else if (i < text.length() && searchLine.charAt(j) != text.charAt(i)) {
+                if (j != 0) {
+                    j = prefixFunction[j - 1];
+                } else {
+                    i = i + 1;
+                }
+            }
+        }
+        return foundIndexes;
     }
 }

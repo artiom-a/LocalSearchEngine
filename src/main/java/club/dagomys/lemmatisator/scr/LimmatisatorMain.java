@@ -40,9 +40,10 @@ public class LimmatisatorMain {
 //            counter.getLemmaSet().forEach(System.out::println);
             Page  page = new Page();
             page.setContent("В отделе представлен универсальный книжный фонд, который постоянно пополняется новинками и бестселлерами");
+            LemmaCounter counter1 = new LemmaCounter(page.getContent());
             Lemma lemma = new Lemma();
-            lemma.setLemma("универсальные");
-            counter.findLemmaIndexInText(page,lemma).forEach(System.out::println);
+            lemma.setLemma("представить");
+            counter1.findLemmaIndexInText(page,lemma).forEach(System.out::println);
 
 
         } catch (IOException e) {
