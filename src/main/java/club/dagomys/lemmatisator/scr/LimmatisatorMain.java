@@ -13,6 +13,7 @@ import org.apache.lucene.morphology.analyzer.MorphologyAnalyzer;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.thymeleaf.util.StringUtils;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import java.io.IOException;
@@ -39,11 +40,28 @@ public class LimmatisatorMain {
 //            counter.countLemmas().forEach((key, value) -> System.out.println(key + "\t" + value));
 //            counter.getLemmaSet().forEach(System.out::println);
             Page  page = new Page();
-            page.setContent("В отделе представлен универсальный книжный фонд, который постоянно пополняется новинками и бестселлерами");
+            page.setContent(test);;
+//                           01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123;
+//                           1         10        20        30        40        50        60        70        80        90        100
             LemmaCounter counter1 = new LemmaCounter(page.getContent());
             Lemma lemma = new Lemma();
+            List<Lemma> lemmaList = new ArrayList<>();
             lemma.setLemma("представить");
-            counter1.findLemmaIndexInText(page,lemma).forEach(System.out::println);
+            lemmaList.add(lemma);
+            lemmaList.add(new Lemma("отдел", 1));
+            lemmaList.add(new Lemma("фонд", 1));
+            lemmaList.add(new Lemma("постоянно", 1));
+            lemmaList.add(new Lemma("новинка", 1));
+            lemmaList.add(new Lemma("программирование", 1));
+                counter1.findLemmaIndexInText(page,lemmaList).forEach(word->{
+                    String sub1 = page.getContent().substring(word).strip();
+                    int end = sub1.indexOf(" ");
+                    System.out.println(word);
+                    System.out.println(sub1.substring(0, end));
+//                    System.out.println(StringUtils.substringAfter(word, " "));
+                });
+
+
 
 
         } catch (IOException e) {

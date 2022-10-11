@@ -17,6 +17,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LemmaCounter {
     private final LuceneMorphology russianMorphology = new RussianLuceneMorphology();
@@ -52,27 +53,29 @@ public class LemmaCounter {
         return wordsMap;
     }
 
-    public ArrayList<Integer> findLemmaIndexInText(Page page, Lemma lemma) {
+    public ArrayList<Integer> findLemmaIndexInText(Page page, List<Lemma> lemmaList) {
         ArrayList<Integer> listOfIndexes = new ArrayList<>();
-        Document document = Jsoup.parse(page.getContent());
-
-        List<String> pageWordList = wordPatterRegexp
-                .matcher(document.text().toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " "))
-                .results()
-                .map(MatchResult::group).toList();
-        System.out.println(pageWordList);
-        mainLogger.info("list[]\t" + pageWordList);
+        String document = Jsoup.parse(page.getContent()).text();
+        String[] pageWordArray = document.split("\\s+");
         int index = 0;
-        List<String> lemmas = pageWordList.stream()
-                .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
-                .flatMap(Collection::stream).toList();
-
-            for (String s2 : lemmas) {
-                if (s2.equals(lemma.getLemma())) {
-                    listOfIndexes.add(index);
+        for (String splitWord : pageWordArray) {
+            String word = splitWord.toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " ");
+            if (word.matches(wordPatterRegexp.pattern()) && word.matches(english.pattern()) || word.matches(russian.pattern())) {
+                List<String> lemmas = Stream.of(word)
+                        .map(w -> Objects.equals(getLanguage(w), "RU") ? russianMorphology.getNormalForms(w) : englishMorphology.getNormalForms(w))
+                        .flatMap(Collection::stream).toList();
+                for (Lemma lemma : lemmaList) {
+                    for (String l1 : lemmas) {
+                        if (l1.equals(lemma.getLemma())) {
+                            listOfIndexes.add(index);
+                        }
+                    }
                 }
             }
-        System.out.println(lemmas);
+            index += splitWord.length() + 1;
+        }
+
+        mainLogger.info("INDEXES\t" + listOfIndexes);
         return listOfIndexes;
     }
 

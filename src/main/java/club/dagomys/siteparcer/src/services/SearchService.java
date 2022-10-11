@@ -11,11 +11,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 @Service
 public class SearchService {
     private final Logger mainLogger = LogManager.getLogger(SearchService.class);
+    private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
 
     @Autowired
     private LemmaService lemmaService;
@@ -36,7 +39,7 @@ public class SearchService {
     private LemmaCounter counter;
 
     public List<Page> search(SearchRequest searchLine) {
-        mainLogger.debug("Поисковый запрос \t" + searchLine);
+        mainLogger.info("Поисковый запрос \t" + searchLine);
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
@@ -55,8 +58,8 @@ public class SearchService {
         Map<Page, Float> pagesForRelevance = getRelRelevance(findPages, findLemmas);
         pagesForRelevance.forEach((key, value) -> {
             SearchResponse response = getResponse(key, value, findLemmas);
-            mainLogger.warn("RESPONSE \t" + new SearchResponse(key.getRelPath(), getTitle(key), getSnippet(key, findLemmas), value));
-//            mainLogger.debug("RESPONSE " + response);
+//            mainLogger.warn("RESPONSE \t" + new SearchResponse(key.getRelPath(), getTitle(key), getSnippet(key, findLemmas), value));
+            mainLogger.info("RESPONSE " + response);
         });
 
         return pagesForRelevance.keySet().stream().toList();
@@ -81,13 +84,23 @@ public class SearchService {
         StringBuilder string = new StringBuilder();
         Document document = Jsoup.parse(page.getContent());
         List<Integer> searchIndexes = new ArrayList<>();
-        requestLemmas.forEach(lemma -> {
-            searchIndexes.addAll(KMPSearch(document.text(), lemma));
-//            searchIndexes.addAll(counter.findLemmaIndexInText(page, lemma));
-        });
+        Elements titleElements = document.select("title");
+        Elements bodyElements = document.select("body");
+        StringBuilder builder = new StringBuilder();
+        titleElements.forEach(element -> builder.append(element.text()).append(" ").append("\n"));
+        bodyElements.forEach(element -> builder.append(element.text()).append(" "));
+//        mainLogger.info(builder.toString());
+//            searchIndexes.addAll(KMPSearch(document.text(), lemma));
+//        String modifiedText = wordPatterRegexp
+//                .matcher(builder.toString().toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " ")).results().map(MatchResult::group).toString();
+//        System.out.println(modifiedText);
+        searchIndexes.addAll(counter.findLemmaIndexInText(page, requestLemmas));
         searchIndexes.forEach(index -> {
+            String substring = document.text().substring(index).strip();
+            int end = substring.indexOf(" ");
+//            mainLogger.info(substring.substring(0, end));
             if (!document.text().isEmpty()) {
-                string.append(document.text(), index, index + 30);
+                string.append(substring, 0, end);
                 string.append(" ");
             }
         });
