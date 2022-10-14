@@ -64,12 +64,12 @@ public class LemmaCounter {
                 List<String> lemmas = Stream.of(word)
                         .map(w -> Objects.equals(getLanguage(w), "RU") ? russianMorphology.getNormalForms(w) : englishMorphology.getNormalForms(w))
                         .flatMap(Collection::stream).toList();
-                for (Lemma lemma : lemmaList) {
-                    for (String l1 : lemmas) {
-                        if (l1.equals(lemma.getLemma())) {
+                for (Lemma requestLemma : lemmaList) {
+//                    for (String lemma : lemmas) {
+                        if (lemmas.contains(requestLemma.getLemma())) {
                             listOfIndexes.add(index);
                         }
-                    }
+//                    }
                 }
             }
             index += splitWord.length() + 1;

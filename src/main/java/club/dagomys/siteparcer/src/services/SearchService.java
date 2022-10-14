@@ -6,7 +6,6 @@ import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
 import club.dagomys.siteparcer.src.entity.request.SearchResponse;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -17,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -38,13 +35,14 @@ public class SearchService {
 
     private LemmaCounter counter;
 
-    public List<Page> search(SearchRequest searchLine) {
+    public List<SearchResponse> search(SearchRequest searchLine) {
         mainLogger.info("Поисковый запрос \t" + searchLine);
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
         List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
         List<Page> pageIndexes = new ArrayList<>();
+        List<SearchResponse> searchResponses = new ArrayList<>();
         indexingList.forEach(indexing -> pageIndexes.add(indexing.getPage()));
 
         for (Lemma lemma : findLemmas) {
@@ -56,18 +54,17 @@ public class SearchService {
             }
         }
         Map<Page, Float> pagesForRelevance = getRelRelevance(findPages, findLemmas);
-        pagesForRelevance.forEach((key, value) -> {
-            SearchResponse response = getResponse(key, value, findLemmas);
-//            mainLogger.warn("RESPONSE \t" + new SearchResponse(key.getRelPath(), getTitle(key), getSnippet(key, findLemmas), value));
+        pagesForRelevance.forEach((page, relevance) -> {
+            SearchResponse response = getResponse(page, relevance, findLemmas);
+            searchResponses.add(response);
             mainLogger.info("RESPONSE " + response);
         });
 
-        return pagesForRelevance.keySet().stream().toList();
+        return searchResponses;
     }
 
     private SearchResponse getResponse(Page page, float relevance, List<Lemma> lemmas) {
-
-        return new SearchResponse(page.getRelPath(), getTitle(page), getSnippet(page, lemmas), relevance);
+        return new SearchResponse(getAbsLink("https://svetlovka.ru", page), getTitle(page), getSnippet(page, lemmas), relevance);
     }
 
     private String getTitle(Page page) {
@@ -78,7 +75,20 @@ public class SearchService {
         } else
             return title;
     }
+    private String getAbsLink(String site, Page page) {
+        StringBuilder string = new StringBuilder();
+        string.append("<a href=\"");
+        if(urlChecker(page)){
+            string.append(page.getRelPath()).append("\">");
+            string.append(getTitle(page)).append("</a>");
+            return string.toString();
+        } else {
+            string.append(site).append(page.getRelPath()).append("\">");
+            string.append(getTitle(page)).append("</a>");
+            return string.toString();
+        }
 
+    }
 
     private String getSnippet(Page page, List<Lemma> requestLemmas) {
         StringBuilder string = new StringBuilder();
@@ -99,9 +109,10 @@ public class SearchService {
             String substring = document.text().substring(index).strip();
             int end = substring.indexOf(" ");
 //            mainLogger.info(substring.substring(0, end));
-            if (!document.text().isEmpty()) {
+            if (!builder.toString().isEmpty()) {
+                string.append("<span><b>");
                 string.append(substring, 0, end);
-                string.append(" ");
+                string.append("</b></span> ");
             }
         });
         return string.toString();
@@ -235,5 +246,11 @@ public class SearchService {
             }
         }
         return foundIndexes;
+    }
+
+    private boolean urlChecker(Page page) {
+        Pattern urlPattern = Pattern.compile("(https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,})");
+        return
+                urlPattern.matcher(page.getRelPath()).find();
     }
 }

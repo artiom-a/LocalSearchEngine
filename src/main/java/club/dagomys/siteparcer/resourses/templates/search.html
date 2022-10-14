@@ -35,8 +35,10 @@
             <tbody>
             <tr th:each="index, stat: ${indexList}">
                 <td th:text="${stat.index + 1}"></td>
-                <td th:text="${index.id}"></td>
-                <td th:text="${index.relPath}"></td>
+<!--                <td th:text="${index.id}"></td>-->
+                <td th:text="${index.title}"></td>
+                <td th:utext="${index.URI}"></td>
+                <td th:utext="${index.snippet}"></td>
 <!--                <td th:text="${index.lemma.lemma}"></td>-->
 <!--                <td th:text="${index.rank}"></td>-->
             </tr>

@@ -6,6 +6,8 @@ import club.dagomys.siteparcer.src.entity.FieldSelector;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.repos.FieldRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import java.util.*;
 public class FieldService {
     @Autowired
     private FieldRepository fieldRepository;
+    private Logger mainLogger = LogManager.getLogger(FieldService.class);
 
     public List<Field> getAllFields() {
         List<Field> fields = new ArrayList<>();
@@ -51,8 +54,8 @@ public class FieldService {
                 this.saveField(title);
                 this.saveField(body);
             } else {
-                System.out.println("Данные уже добавлены ранее");
-                fieldService.getAllFields().forEach(System.out::println);
+                mainLogger.info("Данные уже добавлены ранее");
+                fieldService.getAllFields().forEach(field -> mainLogger.info(field));
             }
         };
     }
