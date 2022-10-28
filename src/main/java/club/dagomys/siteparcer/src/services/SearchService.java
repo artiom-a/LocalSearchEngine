@@ -1,6 +1,7 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.lemmatisator.scr.LemmaCounter;
+import club.dagomys.siteparcer.src.entity.Field;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
@@ -14,8 +15,13 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.naming.directory.SearchResult;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -53,6 +59,7 @@ public class SearchService {
                 findPages.retainAll(tempList);
             }
         }
+
         Map<Page, Float> pagesForRelevance = getRelRelevance(findPages, findLemmas);
         pagesForRelevance.forEach((page, relevance) -> {
             SearchResponse response = getResponse(page, relevance, findLemmas);
@@ -75,10 +82,11 @@ public class SearchService {
         } else
             return title;
     }
+
     private String getAbsLink(String site, Page page) {
         StringBuilder string = new StringBuilder();
         string.append("<a href=\"");
-        if(urlChecker(page)){
+        if (urlChecker(page)) {
             string.append(page.getRelPath()).append("\">");
             string.append(getTitle(page)).append("</a>");
             return string.toString();
@@ -89,34 +97,85 @@ public class SearchService {
         }
 
     }
-
+    private List<TreeSet<Integer>> getSearchingIndexes (String string, List<Integer> indexesOfBolt) {
+        ArrayList<Integer> indexes = new ArrayList<>(indexesOfBolt);
+        List<TreeSet<Integer>> list = new ArrayList<>();
+        TreeSet<Integer> temp = new TreeSet<>();
+        for (int i = 0; i < indexes.size(); i++) {
+            String s = string.substring(indexes.get(i));
+            int end = s.indexOf(" ");
+            if ((i + 1) <= indexes.size() - 1 && (indexes.get(i + 1) - indexes.get(i)) < end + 5){
+                temp.add(indexes.get(i));
+                temp.add(indexes.get(i + 1));
+            }
+            else {
+                if (!temp.isEmpty()) {
+                    list.add(temp);
+                    temp = new TreeSet<>();
+                }
+                temp.add(indexes.get(i));
+                list.add(temp);
+                temp = new TreeSet<>();
+            }
+        }
+        list.sort((Comparator<Set<Integer>>) (o1, o2) -> o2.size() - o1.size());
+        ArrayList<TreeSet<Integer>> searchingIndexes = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            if(list.size() > i) {
+                searchingIndexes.add(list.get(i));
+            }
+        }
+        return searchingIndexes;
+    }
     private String getSnippet(Page page, List<Lemma> requestLemmas) {
         StringBuilder string = new StringBuilder();
         Document document = Jsoup.parse(page.getContent());
+        string.append(document.text());
         List<Integer> searchIndexes = new ArrayList<>();
-        Elements titleElements = document.select("title");
-        Elements bodyElements = document.select("body");
-        StringBuilder builder = new StringBuilder();
-        titleElements.forEach(element -> builder.append(element.text()).append(" ").append("\n"));
-        bodyElements.forEach(element -> builder.append(element.text()).append(" "));
-//        mainLogger.info(builder.toString());
-//            searchIndexes.addAll(KMPSearch(document.text(), lemma));
-//        String modifiedText = wordPatterRegexp
-//                .matcher(builder.toString().toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " ")).results().map(MatchResult::group).toString();
-//        System.out.println(modifiedText);
         searchIndexes.addAll(counter.findLemmaIndexInText(page, requestLemmas));
-        searchIndexes.forEach(index -> {
-            String substring = document.text().substring(index).strip();
-            int end = substring.indexOf(" ");
-//            mainLogger.info(substring.substring(0, end));
-            if (!builder.toString().isEmpty()) {
-                string.append("<span><b>");
-                string.append(substring, 0, end);
-                string.append("</b></span> ");
+//        searchIndexes.forEach(index -> {
+//            String substring = document.text().substring(index).strip();
+//            int start = index-10;
+//            int end = substring.indexOf(" ");
+////            mainLogger.info(substring.substring(0, end));
+//            if (!document.toString().isEmpty()) {
+//                if (start >= 0) {
+//                    string.append(document.text(), start, index);
+//                } else {
+//                    string.append(document.text(), 0, index);
+//                }
+//                    string.append("<span><b>");
+//                    string.append(substring, 0, end);
+//                    string.append("</b></span> ");
+//                    string.append(substring, end, 30);
+//                    string.append("... ");
+//
+//
+//
+//            }
+//        });
+        List<TreeSet<Integer>> indexesList = getSearchingIndexes(string.toString(), searchIndexes);
+        StringBuilder builder1 = new StringBuilder();
+        for (TreeSet<Integer> set : indexesList) {
+            int from = set.first();
+            int to = set.last();
+            Pattern pattern = Pattern.compile("\\p{Punct}|\\s");
+            Matcher matcher = pattern.matcher(string.substring(to));
+            int offset = 0;
+            if (matcher.find()){
+                offset = matcher.end();
             }
-        });
-        return string.toString();
+            builder1.append("<b>")
+                    .append(string, from, to + offset)
+                    .append("</b>");
+            if (!((string.length() - to) < 30)) {
+                builder1.append(string, to + offset, string.indexOf(" ", to + offset + 30))
+                        .append("... ");
+            }
+        }
+        return builder1.toString();
     }
+
 
     private float getAbsRelevance(Page page, List<Lemma> lemmas) {
         float r = 0f;

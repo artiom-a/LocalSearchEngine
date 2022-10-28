@@ -59,17 +59,15 @@ public class LemmaCounter {
         String[] pageWordArray = document.split("\\s+");
         int index = 0;
         for (String splitWord : pageWordArray) {
-            String word = splitWord.toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " ");
+            String word = splitWord.toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s", " ");
             if (word.matches(wordPatterRegexp.pattern()) && word.matches(english.pattern()) || word.matches(russian.pattern())) {
                 List<String> lemmas = Stream.of(word)
                         .map(w -> Objects.equals(getLanguage(w), "RU") ? russianMorphology.getNormalForms(w) : englishMorphology.getNormalForms(w))
                         .flatMap(Collection::stream).toList();
                 for (Lemma requestLemma : lemmaList) {
-//                    for (String lemma : lemmas) {
                         if (lemmas.contains(requestLemma.getLemma())) {
                             listOfIndexes.add(index);
                         }
-//                    }
                 }
             }
             index += splitWord.length() + 1;
