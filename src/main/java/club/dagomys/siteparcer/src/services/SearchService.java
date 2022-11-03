@@ -14,6 +14,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.util.StringUtils;
 
 import javax.naming.directory.SearchResult;
 import java.io.IOException;
@@ -70,8 +71,8 @@ public class SearchService {
         return searchResponses;
     }
 
-    private SearchResponse getResponse(Page page, float relevance, List<Lemma> lemmas) {
-        return new SearchResponse(getAbsLink("https://svetlovka.ru", page), getTitle(page), getSnippet(page, lemmas), relevance);
+    private SearchResponse getResponse(Page page, float relevance, List<Lemma> requestLemmas) {
+        return new SearchResponse(getAbsLink("https://svetlovka.ru", page), getTitle(page), getSnippet(page, requestLemmas), relevance);
     }
 
     private String getTitle(Page page) {
@@ -97,83 +98,64 @@ public class SearchService {
         }
 
     }
-    private List<TreeSet<Integer>> getSearchingIndexes (String string, List<Integer> indexesOfBolt) {
-        ArrayList<Integer> indexes = new ArrayList<>(indexesOfBolt);
+
+    private List<TreeSet<Integer>> getSearchingIndexes(String string, List<Integer> indexes) {
         List<TreeSet<Integer>> list = new ArrayList<>();
-        TreeSet<Integer> temp = new TreeSet<>();
-        for (int i = 0; i < indexes.size(); i++) {
-            String s = string.substring(indexes.get(i));
-            int end = s.indexOf(" ");
-            if ((i + 1) <= indexes.size() - 1 && (indexes.get(i + 1) - indexes.get(i)) < end + 5){
-                temp.add(indexes.get(i));
-                temp.add(indexes.get(i + 1));
-            }
-            else {
-                if (!temp.isEmpty()) {
-                    list.add(temp);
-                    temp = new TreeSet<>();
+        TreeSet<Integer> snippetSet = new TreeSet<>();
+        ListIterator<Integer> iterator = indexes.listIterator();
+        while (iterator.hasNext()) {
+            Integer index = iterator.next();
+            int nextIndex = iterator.nextIndex();
+            String s = string.substring(index);
+            int end = s.indexOf(' ');
+            if (nextIndex <= indexes.size() - 1 && (indexes.get(nextIndex) - index) < end + 4) {
+                snippetSet.add(index);
+                snippetSet.add(indexes.get(nextIndex));
+            } else {
+                if (!snippetSet.isEmpty()) {
+                    list.add(snippetSet);
+                    snippetSet = new TreeSet<>();
                 }
-                temp.add(indexes.get(i));
-                list.add(temp);
-                temp = new TreeSet<>();
+                snippetSet.add(index);
+                list.add(snippetSet);
+                snippetSet = new TreeSet<>();
             }
         }
         list.sort((Comparator<Set<Integer>>) (o1, o2) -> o2.size() - o1.size());
         ArrayList<TreeSet<Integer>> searchingIndexes = new ArrayList<>();
-        for (int i = 0; i < 2; i++) {
-            if(list.size() > i) {
+        for (int i = 0; i < 3; i++) {
+            if (list.size() > i) {
                 searchingIndexes.add(list.get(i));
             }
         }
         return searchingIndexes;
     }
+
     private String getSnippet(Page page, List<Lemma> requestLemmas) {
         StringBuilder string = new StringBuilder();
         Document document = Jsoup.parse(page.getContent());
         string.append(document.text());
-        List<Integer> searchIndexes = new ArrayList<>();
-        searchIndexes.addAll(counter.findLemmaIndexInText(page, requestLemmas));
-//        searchIndexes.forEach(index -> {
-//            String substring = document.text().substring(index).strip();
-//            int start = index-10;
-//            int end = substring.indexOf(" ");
-////            mainLogger.info(substring.substring(0, end));
-//            if (!document.toString().isEmpty()) {
-//                if (start >= 0) {
-//                    string.append(document.text(), start, index);
-//                } else {
-//                    string.append(document.text(), 0, index);
-//                }
-//                    string.append("<span><b>");
-//                    string.append(substring, 0, end);
-//                    string.append("</b></span> ");
-//                    string.append(substring, end, 30);
-//                    string.append("... ");
-//
-//
-//
-//            }
-//        });
+        List<Integer> searchIndexes = new ArrayList<>(counter.findLemmaIndexInText(page, requestLemmas));
         List<TreeSet<Integer>> indexesList = getSearchingIndexes(string.toString(), searchIndexes);
-        StringBuilder builder1 = new StringBuilder();
+        StringBuilder snippetBuilder = new StringBuilder();
         for (TreeSet<Integer> set : indexesList) {
             int from = set.first();
             int to = set.last();
             Pattern pattern = Pattern.compile("\\p{Punct}|\\s");
             Matcher matcher = pattern.matcher(string.substring(to));
             int offset = 0;
-            if (matcher.find()){
+            if (matcher.find()) {
                 offset = matcher.end();
             }
-            builder1.append("<b>")
+            snippetBuilder.append("<b>")
                     .append(string, from, to + offset)
                     .append("</b>");
-            if (!((string.length() - to) < 30)) {
-                builder1.append(string, to + offset, string.indexOf(" ", to + offset + 30))
-                        .append("... ");
+            if (!((string.length() - to) < 10)) {
+                snippetBuilder.append(string, to + offset, string.indexOf(" ", to + offset + 10));
             }
+            snippetBuilder.append("... ");
         }
-        return builder1.toString();
+        return snippetBuilder.toString();
     }
 
 
