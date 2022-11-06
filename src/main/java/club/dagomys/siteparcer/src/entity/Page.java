@@ -31,6 +31,10 @@ public class Page{
     @Type(type = "org.hibernate.type.TextType")
     private String content;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "site_id")
+    private Site site;
+
     public Page(String URL) {
         this.relPath = URL.strip();
         statusCode = 0;

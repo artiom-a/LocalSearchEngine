@@ -24,6 +24,10 @@ public class Lemma implements Comparable<Lemma> {
     private String lemma;
     private int frequency;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "site_id")
+    private Site site;
+
     public Lemma(String lemma, int frequency) {
         this.lemma = lemma;
         this.frequency = frequency;

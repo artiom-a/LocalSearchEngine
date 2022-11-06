@@ -1,12 +1,14 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
+import club.dagomys.siteparcer.src.entity.Site;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,6 +25,8 @@ public class SiteParser extends RecursiveTask<Link> {
     public SiteParser(Link URL) throws IOException {
         this.rootURL = URL;
     }
+
+    private SiteService siteService;
 
     //TODO: 22.06.2022{
     // реализовать метод обхода сайта с сохранением ссылки, кода ответа и содержимого страницы

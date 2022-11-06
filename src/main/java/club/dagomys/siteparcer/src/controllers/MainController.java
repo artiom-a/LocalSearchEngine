@@ -96,6 +96,7 @@ public class MainController implements WebMvcConfigurer {
     public String addUrl(@Valid @ModelAttribute("URL") URLRequest URL, Errors errors, Model model) {
         if (!errors.hasErrors()) {
             mainLogger.info(URL);
+//            siteService.saveSite(new Site(URL.getPath(),"NTCN"));
             pageService.startSiteParse(URL.getPath());
             return "redirect:/";
         } else {

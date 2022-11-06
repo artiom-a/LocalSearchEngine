@@ -1,6 +1,8 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
+import club.dagomys.siteparcer.src.entity.Site;
+import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +21,16 @@ public class SiteParserRunner {
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     @Autowired
     private PageService pageService;
+
+    @Autowired
+    private SiteService siteService;
     private final String URL;
     private static boolean isStarted = false;
 
     @Autowired
-    public SiteParserRunner(@Value("${site.name}") String URL, PageService service) {
+    public SiteParserRunner(@Value("${site.name}") String URL, PageService service, SiteService siteService) {
         this.pageService = service;
+        this.siteService = siteService;
         this.URL = URL;
     }
 
@@ -35,6 +41,7 @@ public class SiteParserRunner {
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
         try {
             Link rootLink = new Link(URL);
+            siteService.saveSite(new Site(URL, rootLink.getValue()));
             ForkJoinPool siteMapPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
             ForkJoinTask<Link> forkJoinTask = new SiteParser(rootLink);
             siteMapPool.invoke(forkJoinTask);
@@ -54,7 +61,7 @@ public class SiteParserRunner {
         isStarted = started;
     }
 
-    public boolean getStatus() {
+    public boolean isStarted() {
         return isStarted;
     }
 

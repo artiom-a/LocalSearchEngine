@@ -2,14 +2,13 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.repos.PageRepository;
+import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class PageService {
@@ -18,6 +17,8 @@ public class PageService {
     @Autowired
     private PageRepository pageRepository;
 
+    @Autowired
+    private SiteService siteService;
 
     public List<Page> getAllPages() {
         List<Page> allPages = new ArrayList<>();
@@ -36,8 +37,9 @@ public class PageService {
     }
 
     public void startSiteParse(String url) {
-        SiteParserRunner siteParser = new SiteParserRunner(url, this);
-        if (siteParser.getStatus()) {
+        SiteParserRunner siteParser = new SiteParserRunner(url, this, siteService);
+        mainLogger.info(siteService);
+        if (siteParser.isStarted()) {
             mainLogger.warn("SiteParser is running!");
         } else {
 
