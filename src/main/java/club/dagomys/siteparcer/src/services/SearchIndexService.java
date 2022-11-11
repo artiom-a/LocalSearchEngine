@@ -31,6 +31,9 @@ public class SearchIndexService {
     @Autowired
     private PageService pageService;
 
+    @Autowired
+    private SiteService siteService;
+
     public SearchIndex saveIndex(SearchIndex searchIndex) {
         return searchIndexRepository.save(searchIndex);
     }
@@ -41,49 +44,6 @@ public class SearchIndexService {
         return indexList;
     }
 
-    private Map<String, Float> startIndexingLemmasOnPage(@NotNull Page indexingPage) {
-        Map<String, Float> lemmas = new TreeMap<>();
-        Field title = fieldService.getFieldByName(FieldSelector.TITLE);
-        Field body = fieldService.getFieldByName(FieldSelector.BODY);
-        if (indexingPage.getContent() != null) {
-            Document doc = Jsoup.parse(indexingPage.getContent());
-            try {
-                LemmaCounter titleCounter = new LemmaCounter(doc.getElementsByTag(title.getName()).text());
-                LemmaCounter bodyCounter = new LemmaCounter(doc.getElementsByTag(body.getName()).text());
-                Map<String, Integer> titleLemmas = titleCounter.countLemmas();
-                Map<String, Integer> bodyLemmas = bodyCounter.countLemmas();
-                bodyLemmas.forEach((key, value) -> {
-                    float rank;
-                    if (titleLemmas.containsKey(key)) {
-                        rank = title.getWeight() * titleLemmas.get(key) + value * body.getWeight();
-                    } else {
-                        rank = bodyLemmas.get(key) * body.getWeight();
-                    }
-                    lemmas.put(key, rank);
-                });
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        } else {
-            mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
-        }
-        mainLogger.info(lemmas);
-        return lemmas;
-    }
-
-    public void startIndexingAllPages() {
-        lemmaService.lemmaFrequencyCounter();
-        for (Page page : pageService.getAllPages()) {
-            mainLogger.info("Start parsing \t" + page.getRelPath());
-            Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
-            indexedPageMap.forEach((key, value) -> {
-                Lemma findLemma = lemmaService.findLemma(key).get();
-                saveIndex(new SearchIndex(page, findLemma, value));
-            });
-            mainLogger.warn(page.getRelPath() + " indexing is complete");
-            mainLogger.warn("End parsing \t" + page.getRelPath());
-        }
-    }
 
     public List<SearchIndex> findIndexByLemma(Lemma lemma) {
         return searchIndexRepository.findByLemmaOrderByRankDesc(lemma);

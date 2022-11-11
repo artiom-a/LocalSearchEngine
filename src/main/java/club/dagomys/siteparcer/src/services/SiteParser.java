@@ -26,7 +26,6 @@ public class SiteParser extends RecursiveTask<Link> {
         this.rootURL = URL;
     }
 
-    private SiteService siteService;
 
     //TODO: 22.06.2022{
     // реализовать метод обхода сайта с сохранением ссылки, кода ответа и содержимого страницы

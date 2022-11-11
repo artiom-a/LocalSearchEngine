@@ -2,7 +2,6 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.repos.PageRepository;
-import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +16,6 @@ public class PageService {
     @Autowired
     private PageRepository pageRepository;
 
-    @Autowired
-    private SiteService siteService;
 
     public List<Page> getAllPages() {
         List<Page> allPages = new ArrayList<>();
@@ -36,35 +33,8 @@ public class PageService {
         return getAllPages().stream().filter(page -> page.getId() == id).findFirst().orElseThrow(NoSuchElementException::new);
     }
 
-    public void startSiteParse(String url) {
-        SiteParserRunner siteParser = new SiteParserRunner(url, this, siteService);
-        mainLogger.info(siteService);
-        if (siteParser.isStarted()) {
-            mainLogger.warn("SiteParser is running!");
-        } else {
-
-            siteParser.run();
-        }
-
-    }
-
-
-
-    public void insertToDatabase(Link link) {
-        Page root = new Page(link.getRelUrl());
-        root.setStatusCode(link.getStatusCode());
-        root.setContent(link.getHtml());
-        pageRepository.save(root);
-        link.getChildren().forEach(this::insertToDatabase);
-    }
-
-    private String createSitemap(Link node) {
-        String tabs = String.join("", Collections.nCopies(node.getLayer(), "\t"));
-        StringBuilder result = new StringBuilder(tabs + node.getRelUrl());
-        node.getChildren().forEach(child -> {
-            result.append("\n").append(createSitemap(child));
-        });
-        return result.toString();
+    public List<Page> getPagesBySite(Site site) {
+        return pageRepository.getPageBySite(site).orElse(null);
     }
 
 }

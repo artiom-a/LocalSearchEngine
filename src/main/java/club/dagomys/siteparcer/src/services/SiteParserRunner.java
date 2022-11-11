@@ -2,11 +2,11 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -17,20 +17,21 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
 @Component
+@Scope("prototype")
 public class SiteParserRunner {
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
-    @Autowired
-    private PageService pageService;
-
-    @Autowired
-    private SiteService siteService;
     private final String URL;
     private static boolean isStarted = false;
 
+
     @Autowired
-    public SiteParserRunner(@Value("${site.name}") String URL, PageService service, SiteService siteService) {
-        this.pageService = service;
-        this.siteService = siteService;
+    private MainService mainService;
+
+    @Autowired
+    public SiteParserRunner(@Value("${site.name}") String URL, MainService mainService) {
+//        this.pageService = service;
+//        this.siteService = siteService;
+        this.mainService = mainService;
         this.URL = URL;
     }
 
@@ -41,11 +42,10 @@ public class SiteParserRunner {
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
         try {
             Link rootLink = new Link(URL);
-            siteService.saveSite(new Site(URL, rootLink.getValue()));
             ForkJoinPool siteMapPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
             ForkJoinTask<Link> forkJoinTask = new SiteParser(rootLink);
             siteMapPool.invoke(forkJoinTask);
-            pageService.insertToDatabase(rootLink);
+            mainService.insertToDatabase(rootLink, URL);
             Calendar finishDate = Calendar.getInstance();
             mainLogger.warn("finish time " + dateFormat.format(finishDate.getTime()));
             Duration duration = Duration.between(startTime.toInstant(), finishDate.toInstant());

@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src.entity.request;
+package club.dagomys.siteparcer.src.entity.response;
 
 import club.dagomys.siteparcer.src.entity.Page;
 import lombok.AllArgsConstructor;

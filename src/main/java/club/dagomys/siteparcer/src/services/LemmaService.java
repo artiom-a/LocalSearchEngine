@@ -19,7 +19,6 @@ import java.util.*;
 @Service
 public class LemmaService {
     private final Logger mainLogger = LogManager.getLogger(LemmaService.class);
-    private final Map<String, Lemma> lemmaMap = new TreeMap<>();
 
     @Autowired
     private LemmaRepository lemmaRepository;
@@ -54,56 +53,4 @@ public class LemmaService {
         return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
 
-    public Map<String, Integer> lemmaFrequencyCounter() {
-        Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
-        for (Page page : pageService.getAllPages()) {
-            mainLogger.info("Start parsing \t" + page.getRelPath());
-            Map<String, Lemma> indexedPageMap = startCountingLemmasOnPage(page);
-            indexedPageMap.forEach((key, value) -> {
-                if (indexedPagesLemmas.containsKey(key)) {
-                    indexedPagesLemmas.put(key, indexedPagesLemmas.get(key) + 1);
-                } else {
-                    indexedPagesLemmas.put(key, 1);
-                }
-            });
-            lemmaCounting(indexedPageMap);
-            mainLogger.warn("End parsing \t" + page.getRelPath());
-        }
-        mainLogger.info(lemmaMap.size());
-        indexedPagesLemmas.forEach((key, value) -> saveLemma(new Lemma(key, value)));
-        return indexedPagesLemmas;
-    }
-
-    public Map<String, Lemma> startCountingLemmasOnPage(@NotNull Page indexingPage) {
-        Map<String, Lemma> lemmas = new TreeMap<>();
-        if (indexingPage.getContent() != null) {
-            Document doc = Jsoup.parse(indexingPage.getContent());
-            try {
-
-                for (Field field : fieldService.getAllFields()) {
-                    LemmaCounter lemmaCounter = new LemmaCounter(doc.getElementsByTag(field.getName()).text());
-                    lemmaCounter.countLemmas().forEach((key, value) -> {
-                        lemmas.merge(key, new Lemma(key, value), Lemma::sum);
-                    });
-                }
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        } else {
-            mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
-        }
-        mainLogger.info(lemmas);
-        return lemmas;
-    }
-
-
-    private void lemmaCounting(Map<String, Lemma> inputMap) {
-        inputMap.forEach((key, value) -> {
-            if (lemmaMap.containsKey(key)) {
-                lemmaMap.put(key, new Lemma(key, lemmaMap.get(key).getFrequency() + value.getFrequency()));
-            } else {
-                lemmaMap.put(key, value);
-            }
-        });
-    }
 }

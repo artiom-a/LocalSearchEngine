@@ -1,27 +1,21 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.lemmatisator.scr.LemmaCounter;
-import club.dagomys.siteparcer.src.entity.Field;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
+import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
-import club.dagomys.siteparcer.src.entity.request.SearchResponse;
+import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.util.StringUtils;
 
-import javax.naming.directory.SearchResult;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -72,7 +66,7 @@ public class SearchService {
     }
 
     private SearchResponse getResponse(Page page, float relevance, List<Lemma> requestLemmas) {
-        return new SearchResponse(getAbsLink("https://svetlovka.ru", page), getTitle(page), getSnippet(page, requestLemmas), relevance);
+        return new SearchResponse(getAbsLink(page), getTitle(page), getSnippet(page, requestLemmas), relevance);
     }
 
     private String getTitle(Page page) {
@@ -84,7 +78,7 @@ public class SearchService {
             return title;
     }
 
-    private String getAbsLink(String site, Page page) {
+    private String getAbsLink(Page page) {
         StringBuilder string = new StringBuilder();
         string.append("<a href=\"");
         if (urlChecker(page)) {
@@ -92,7 +86,7 @@ public class SearchService {
             string.append(getTitle(page)).append("</a>");
             return string.toString();
         } else {
-            string.append(site).append(page.getRelPath()).append("\">");
+            string.append(page.getSite().getUrl()).append(page.getRelPath().replaceFirst("/","")).append("\">");
             string.append(getTitle(page)).append("</a>");
             return string.toString();
         }
