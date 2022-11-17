@@ -32,6 +32,9 @@ private MainService mainService;
     @Autowired
     private LemmaService lemmaService;
 
+    @Autowired
+    private SiteService siteService;
+
 
 
     @GetMapping(value = {"/", "/index"})
@@ -47,11 +50,6 @@ private MainService mainService;
     }
 
 
-    @GetMapping(value = "/addUrl")
-    public String getAddUrlPage(Model model, @ModelAttribute("URL") URLRequest URL) {
-        return "add_url";
-    }
-
     @GetMapping(value = {"/{id}"})
     public String getPageById(@ModelAttribute("id") Integer id, Model model) {
         Page findPage = pageService.getPageById(id);
@@ -65,6 +63,12 @@ private MainService mainService;
     public String getAllLemma(Model model) {
         model.addAttribute("lemmas", lemmaService.gelAllLemma());
         return "lemmas";
+    }
+
+    @GetMapping(value = {"/sites"})
+    public String getAllSites(Model model) {
+        model.addAttribute("sites", siteService.getAllSites());
+        return "sites";
     }
 
     @GetMapping(value = {"/deleteAllLemma"})

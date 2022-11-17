@@ -25,7 +25,7 @@ public class SiteService {
 
 
     public Site saveSite(Site site) {
-        return siteRepository.save(site);
+        return siteRepository.save(siteRepository.findByUrl(site.getUrl()).orElse(site));
     }
 
     public Site getSite(String url) {
@@ -50,5 +50,9 @@ public class SiteService {
 
     public List<Page> findPageBySite(Site site) {
         return pageService.getPagesBySite(site);
+    }
+
+    public void deleteSite(Site site) {
+        siteRepository.delete(site);
     }
 }

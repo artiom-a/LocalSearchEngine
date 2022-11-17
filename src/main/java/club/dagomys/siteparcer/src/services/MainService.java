@@ -13,15 +13,18 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Component
 @Scope("prototype")
 public class MainService {
     private final Map<String, Lemma> lemmaMap = new TreeMap<>();
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
+    private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
+    private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(CORE_COUNT);
 
     @Autowired
     private FieldService fieldService;
@@ -42,7 +45,7 @@ public class MainService {
     private PageService pageService;
 
 
-    public Map<String, Integer> countLemmaFrequency(Site site) {
+    private Map<String, Integer> countLemmaFrequency(Site site) {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
         for (Page page : pageService.getPagesBySite(site)) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
@@ -58,7 +61,11 @@ public class MainService {
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
         mainLogger.info(lemmaMap.size());
-        indexedPagesLemmas.forEach((key, value) -> lemmaService.saveLemma(new Lemma(key, value)));
+        indexedPagesLemmas.forEach((key, value) -> {
+            Lemma lemma = new Lemma(key, value);
+            lemma.setSite(site);
+            lemmaService.saveLemma(lemma);
+        });
         return indexedPagesLemmas;
     }
 
@@ -121,14 +128,16 @@ public class MainService {
         } else {
             mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
         }
-        mainLogger.info(lemmas);
+        mainLogger.info("lemmas rank\t"+lemmas);
         return lemmas;
     }
 
     public void startIndexingAllSites() {
         siteService.getAllSites().forEach((site -> {
+            startSiteParse(site);
             countLemmaFrequency(site);
-            for (Page page : pageService.getPagesBySite(site)) {
+
+            for (Page page : siteService.findPageBySite(site)) {
                 mainLogger.info("Start parsing \t" + page.getRelPath());
                 Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
                 indexedPageMap.forEach((key, value) -> {
@@ -138,41 +147,40 @@ public class MainService {
                 mainLogger.warn(page.getRelPath() + " indexing is complete");
                 mainLogger.warn("End parsing \t" + page.getRelPath());
             }
-            startSiteParse(site.getUrl());
+            site.setStatus(SiteStatus.INDEXED);
+            siteService.saveSite(site);
         }));
-
+        threadPool.shutdown();
     }
 
-    public Site startSiteParse(String url) {
-        Site site = null;
-        if (!url.endsWith("/")) {
-            url = url.concat("/");
+
+    public Site startSiteParse(Site site) {
+        SiteParserRunner siteParser;
+        if (!site.getUrl().endsWith("/")) {
+            site.setUrl(site.getUrl().concat("/"));
         }
-        SiteParserRunner siteParser = new SiteParserRunner(url, this);
-        mainLogger.info(pageService);
+        site.setStatus(SiteStatus.INDEXING);
+        site.setStatusTime(LocalDateTime.now());
+        siteService.saveSite(site);
+       siteParser = new SiteParserRunner(site, this);
         if (siteParser.isStarted()) {
             mainLogger.warn("SiteParser is running!");
         } else {
-            site = siteService.getSite(url);
-            site.setUrl(url);
-            site.setStatusTime(LocalDateTime.now());
-            siteService.saveSite(site);
             siteParser.run();
         }
         return site;
     }
 
 
-    public void insertToDatabase(Link link, String URL) {
+    public void insertToDatabase(Link link, Site site) {
         Page root = new Page(link.getRelUrl());
-        Site site = siteService.getSite(URL);
         root.setStatusCode(link.getStatusCode());
         root.setContent(link.getHtml());
         root.setSite(site);
         pageService.savePage(root);
         link.getChildren().forEach(child ->
                 {
-                    insertToDatabase(child, URL);
+                    insertToDatabase(child, site);
                 }
         );
     }
@@ -186,4 +194,23 @@ public class MainService {
         return result.toString();
     }
 
+    public FieldService getFieldService() {
+        return fieldService;
+    }
+
+    public LemmaService getLemmaService() {
+        return lemmaService;
+    }
+
+    public PageService getPageService() {
+        return pageService;
+    }
+
+    public SiteService getSiteService() {
+        return siteService;
+    }
+
+    public SearchIndexService getSearchIndexService(){
+        return searchIndexService;
+    }
 }

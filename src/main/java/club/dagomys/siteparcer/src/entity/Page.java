@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.Type;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,8 +33,9 @@ public class Page{
     @Type(type = "org.hibernate.type.TextType")
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.ALL)
     @JoinColumn(name = "site_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;
 
     public Page(String URL) {

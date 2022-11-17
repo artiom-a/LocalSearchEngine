@@ -16,9 +16,11 @@
     <form action="#" th:action="@{/addUrl}" method="POST" th:object="${URL}">
         <input type="text" th:field="*{path}"  placeholder="add url" class="form-control mb-4 col-4">
         <div th:each="err : ${#fields.errors('path')}">
-            <li  th:text ="${err}"></li>
+            <div class="alert alert-warning" role="alert">
+                <li class="alert-link" th:text ="${err}"></li>
+            </div>
         </div>
-        <button type="submit" class="btn btn-info col-2"> Start crawler</button>
+        <button type="submit" class="btn btn-info col-2"> Add to database</button>
     </form>
 
     <hr>

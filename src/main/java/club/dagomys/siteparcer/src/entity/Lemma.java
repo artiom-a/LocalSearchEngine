@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.util.List;
@@ -24,8 +26,9 @@ public class Lemma implements Comparable<Lemma> {
     private String lemma;
     private int frequency;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade=CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;
 
     public Lemma(String lemma, int frequency) {

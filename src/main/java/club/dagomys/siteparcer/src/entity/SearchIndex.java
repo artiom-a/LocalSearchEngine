@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 
@@ -24,11 +26,13 @@ public class SearchIndex {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "page_id")
+    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.PERSIST)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Page page;
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lemma_id")
+    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.PERSIST)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Lemma lemma;
     @Column(name = "`rank`")
     private float rank;
