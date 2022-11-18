@@ -9,6 +9,7 @@ import club.dagomys.siteparcer.src.services.SiteService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -61,10 +62,16 @@ public class IndexingController {
         }
     }
 
-    @GetMapping("/sites/{id}")
-    public String deleteSite(@PathVariable(value="id") Integer id){
+    @DeleteMapping(value = "/sites/{id}")
+    public String deleteSite(@PathVariable("id") int id){
         Site findSite = siteService.getSite(id);
         siteService.deleteSite(findSite);
+        return  "redirect:/sites";
+    }
+
+    @GetMapping("/sites/{id}")
+    public String getSite(@PathVariable(value="id") Integer id) {
+        mainService.startIndexingSite(siteService.getSite(id));
         return "redirect:/sites";
     }
 }

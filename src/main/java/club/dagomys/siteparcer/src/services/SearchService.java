@@ -4,7 +4,6 @@ import club.dagomys.lemmatisator.scr.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
-import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
 import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 import org.apache.logging.log4j.LogManager;
@@ -81,7 +80,7 @@ public class SearchService {
     private String getAbsLink(Page page) {
         StringBuilder string = new StringBuilder();
         string.append("<a href=\"");
-        if (urlChecker(page)) {
+        if (isAbsURL(page)) {
             string.append(page.getRelPath()).append("\">");
             string.append(getTitle(page)).append("</a>");
             return string.toString();
@@ -283,7 +282,7 @@ public class SearchService {
         return foundIndexes;
     }
 
-    private boolean urlChecker(Page page) {
+    private boolean isAbsURL(Page page) {
         Pattern urlPattern = Pattern.compile("(https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,})");
         return
                 urlPattern.matcher(page.getRelPath()).find();

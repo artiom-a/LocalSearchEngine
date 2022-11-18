@@ -128,8 +128,29 @@ public class MainService {
         } else {
             mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
         }
-        mainLogger.info("lemmas rank\t"+lemmas);
+        mainLogger.info("lemmas rank\t" + lemmas);
         return lemmas;
+    }
+
+    public void startIndexingSite(Site site) {
+        startSiteParse(site);
+        countLemmaFrequency(site);
+
+        synchronized (site) {
+            for (Page page : siteService.findPageBySite(site)) {
+                mainLogger.info("Start parsing \t" + page.getRelPath());
+                Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
+                indexedPageMap.forEach((key, value) -> {
+                    Lemma findLemma = lemmaService.findLemma(key).get();
+                    searchIndexService.saveIndex(new SearchIndex(page, findLemma, value));
+                });
+                mainLogger.warn(page.getRelPath() + " indexing is complete");
+                mainLogger.warn("End parsing \t" + page.getRelPath());
+            }
+        }
+        site.setStatus(SiteStatus.INDEXED);
+        siteService.saveSite(site);
+        lemmaMap.clear();
     }
 
     public void startIndexingAllSites() {
@@ -150,29 +171,29 @@ public class MainService {
             site.setStatus(SiteStatus.INDEXED);
             siteService.saveSite(site);
         }));
-        threadPool.shutdown();
+//        threadPool.shutdown();
     }
 
 
     public Site startSiteParse(Site site) {
-        SiteParserRunner siteParser;
+
         if (!site.getUrl().endsWith("/")) {
             site.setUrl(site.getUrl().concat("/"));
         }
-        site.setStatus(SiteStatus.INDEXING);
-        site.setStatusTime(LocalDateTime.now());
-        siteService.saveSite(site);
-       siteParser = new SiteParserRunner(site, this);
+        SiteParserRunner siteParser = new SiteParserRunner(site, this);
         if (siteParser.isStarted()) {
             mainLogger.warn("SiteParser is running!");
         } else {
+            site.setStatus(SiteStatus.INDEXING);
+            site.setStatusTime(LocalDateTime.now());
+            siteService.saveSite(site);
             siteParser.run();
         }
         return site;
     }
 
 
-    public void insertToDatabase(Link link, Site site) {
+    public synchronized void insertToDatabase(Link link, Site site) {
         Page root = new Page(link.getRelUrl());
         root.setStatusCode(link.getStatusCode());
         root.setContent(link.getHtml());
@@ -210,7 +231,7 @@ public class MainService {
         return siteService;
     }
 
-    public SearchIndexService getSearchIndexService(){
+    public SearchIndexService getSearchIndexService() {
         return searchIndexService;
     }
 }

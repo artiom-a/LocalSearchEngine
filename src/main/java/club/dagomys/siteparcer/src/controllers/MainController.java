@@ -45,7 +45,6 @@ private MainService mainService;
 
     @GetMapping(value = {"/new"})
     public String getOldPage(Model model) {
-        model.addAttribute("pages", pageService.getAllPages());
         return "/frontend/index";
     }
 
