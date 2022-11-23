@@ -66,7 +66,7 @@ public class SiteParser extends RecursiveTask<Link> {
                     childParserList.add(childParser);
                 }
                 for (SiteParser childTask : childParserList) {
-                    System.out.println("\t\t" + childTask.compute());
+                    mainLogger.info("\t\t" + childTask.compute());
                     childList.add(childTask.join());
                 }
             }

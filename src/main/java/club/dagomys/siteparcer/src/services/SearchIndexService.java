@@ -9,11 +9,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class SearchIndexService {
@@ -34,8 +36,9 @@ public class SearchIndexService {
     @Autowired
     private SiteService siteService;
 
-    public SearchIndex saveIndex(SearchIndex searchIndex) {
-        return searchIndexRepository.save(searchIndex);
+//    @Async
+    public CompletableFuture<SearchIndex> saveIndex(SearchIndex searchIndex) {
+        return CompletableFuture.completedFuture(searchIndexRepository.save(searchIndex));
     }
 
     public List<SearchIndex> getAllIndexes() {

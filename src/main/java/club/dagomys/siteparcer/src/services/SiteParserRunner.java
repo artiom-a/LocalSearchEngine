@@ -19,12 +19,13 @@ import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
 @Component
-public class SiteParserRunner implements Runnable{
-    private final Map<String, Lemma> lemmaMap = new TreeMap<>();
+public class SiteParserRunner implements Runnable {
+    private Map<String, Lemma> lemmaMap = new ConcurrentHashMap<>();
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     private final Site site;
     private static boolean isStarted = false;
@@ -58,7 +59,7 @@ public class SiteParserRunner implements Runnable{
             ForkJoinPool siteMapPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
             ForkJoinTask<Link> forkJoinTask = new SiteParser(rootLink);
             siteMapPool.invoke(forkJoinTask);
-            mainService.insertToDatabase(rootLink, site);
+            insertToDatabase(rootLink, site);
             String title = Jsoup.parse(rootLink.getHtml()).title();
             site.setName(title);
             mainService.getSiteService().saveSite(site);
@@ -71,5 +72,18 @@ public class SiteParserRunner implements Runnable{
             System.out.println(e.getMessage());
 
         }
+    }
+
+    private void insertToDatabase(Link link, Site site) {
+        Page root = new Page(link.getRelUrl());
+        root.setStatusCode(link.getStatusCode());
+        root.setContent(link.getHtml());
+        root.setSite(site);
+        mainService.getPageService().savePage(root);
+        link.getChildren().forEach(child ->
+                {
+                    insertToDatabase(child, site);
+                }
+        );
     }
 }

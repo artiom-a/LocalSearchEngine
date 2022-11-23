@@ -7,12 +7,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class SiteService {
@@ -24,8 +26,9 @@ public class SiteService {
     private PageService pageService;
 
 
-    public Site saveSite(Site site) {
-        return siteRepository.save(siteRepository.findByUrl(site.getUrl()).orElse(site));
+//    @Async
+    public CompletableFuture<Site> saveSite(Site site) {
+        return CompletableFuture.completedFuture(siteRepository.save(siteRepository.findByUrl(site.getUrl()).orElse(site)));
     }
 
     public Site getSite(String url) {

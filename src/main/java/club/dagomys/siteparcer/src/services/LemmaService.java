@@ -1,20 +1,15 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.lemmatisator.scr.LemmaCounter;
-import club.dagomys.siteparcer.src.entity.Field;
 import club.dagomys.siteparcer.src.entity.Lemma;
-import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.repos.LemmaRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class LemmaService {
@@ -29,7 +24,7 @@ public class LemmaService {
     @Autowired
     private FieldService fieldService;
 
-    public List<Lemma> gelAllLemma() {
+    public List<Lemma> getAllLemma() {
         return new ArrayList<>(lemmaRepository.findAll());
     }
 
@@ -37,8 +32,9 @@ public class LemmaService {
         lemmaRepository.saveAll(lemmaList);
     }
 
-    public void saveLemma(Lemma lemma) {
-        lemmaRepository.save(lemma);
+//    @Async
+    public CompletableFuture<Lemma> saveLemma(Lemma lemma) {
+        return CompletableFuture.completedFuture(lemmaRepository.save(lemma));
     }
 
     public Iterable<Lemma> saveAllLemmas(Set<Lemma> lemmas) {
@@ -52,5 +48,10 @@ public class LemmaService {
     public Optional<Lemma> findLemma(String lemma) {
         return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
+
+
+//    public CompletableFuture<Optional<Lemma>> asyncLemmaFind(String lemma) {
+//        return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
+//    }
 
 }

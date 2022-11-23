@@ -1,7 +1,6 @@
 package club.dagomys.siteparcer.src.controllers;
 
 import club.dagomys.siteparcer.src.entity.*;
-import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.services.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 
 @Controller
@@ -60,7 +60,7 @@ private MainService mainService;
 
     @GetMapping(value = {"/lemmas"})
     public String getAllLemma(Model model) {
-        model.addAttribute("lemmas", lemmaService.gelAllLemma());
+        model.addAttribute("lemmas", lemmaService.getAllLemma());
         return "lemmas";
     }
 

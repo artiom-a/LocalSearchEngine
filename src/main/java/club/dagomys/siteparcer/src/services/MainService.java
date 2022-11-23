@@ -8,20 +8,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-@Component
-@Scope("prototype")
-public class MainService {
-    private final Map<String, Lemma> lemmaMap = new TreeMap<>();
+@Service
+public class MainService extends Thread {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
     private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(CORE_COUNT);
@@ -60,7 +57,7 @@ public class MainService {
             lemmaCounting(indexedPageMap);
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
-        mainLogger.info(lemmaMap.size());
+//        mainLogger.info(lemmaMap.size());
         indexedPagesLemmas.forEach((key, value) -> {
             Lemma lemma = new Lemma(key, value);
             lemma.setSite(site);
@@ -87,12 +84,13 @@ public class MainService {
         } else {
             mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
         }
-        mainLogger.info(lemmas);
+        mainLogger.info("Lemmas count: {} {} ", lemmas.size(), "words");
         return lemmas;
     }
 
 
     private void lemmaCounting(Map<String, Lemma> inputMap) {
+        Map<String, Lemma> lemmaMap = new TreeMap<>();
         inputMap.forEach((key, value) -> {
             if (lemmaMap.containsKey(key)) {
                 lemmaMap.put(key, new Lemma(key, lemmaMap.get(key).getFrequency() + value.getFrequency()));
@@ -103,6 +101,7 @@ public class MainService {
     }
 
     private Map<String, Float> startIndexingLemmasOnPage(@NotNull Page indexingPage) {
+        long startTime = System.currentTimeMillis();
         Map<String, Float> lemmas = new TreeMap<>();
         Field title = fieldService.getFieldByName(FieldSelector.TITLE);
         Field body = fieldService.getFieldByName(FieldSelector.BODY);
@@ -128,83 +127,53 @@ public class MainService {
         } else {
             mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
         }
-        mainLogger.info("lemmas rank\t" + lemmas);
+        long endTime = System.currentTimeMillis();
+        mainLogger.info("lemmas rank\t {} {}ms", lemmas.size(), endTime - startTime);
         return lemmas;
     }
 
-    public void startIndexingSite(Site site) {
-        startSiteParse(site);
-        countLemmaFrequency(site);
-
-        synchronized (site) {
-            for (Page page : siteService.findPageBySite(site)) {
-                mainLogger.info("Start parsing \t" + page.getRelPath());
-                Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
-                indexedPageMap.forEach((key, value) -> {
-                    Lemma findLemma = lemmaService.findLemma(key).get();
-                    searchIndexService.saveIndex(new SearchIndex(page, findLemma, value));
-                });
-                mainLogger.warn(page.getRelPath() + " indexing is complete");
-                mainLogger.warn("End parsing \t" + page.getRelPath());
-            }
+    private void createSearchSiteIndexes(Site site) {
+        for (Page page : siteService.findPageBySite(site)) {
+            mainLogger.info("Start parsing \t" + page.getRelPath());
+            Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
+            indexedPageMap.forEach((key, value) -> {
+                Lemma findLemma = lemmaService.findLemma(key).get();
+                searchIndexService.saveIndex(new SearchIndex(page, findLemma, value));
+            });
+            mainLogger.warn(page.getRelPath() + " indexing is complete");
+            mainLogger.warn("End parsing \t" + page.getRelPath());
         }
-        site.setStatus(SiteStatus.INDEXED);
-        siteService.saveSite(site);
-        lemmaMap.clear();
     }
 
-    public void startIndexingAllSites() {
-        siteService.getAllSites().forEach((site -> {
-            startSiteParse(site);
-            countLemmaFrequency(site);
+    private void startSiteIndex(Site site) {
+        startSiteParse(site);
+        countLemmaFrequency(site);
+        createSearchSiteIndexes(site);
+        site.setStatus(SiteStatus.INDEXED);
+        siteService.saveSite(site);
+    }
 
-            for (Page page : siteService.findPageBySite(site)) {
-                mainLogger.info("Start parsing \t" + page.getRelPath());
-                Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
-                indexedPageMap.forEach((key, value) -> {
-                    Lemma findLemma = lemmaService.findLemma(key).get();
-                    searchIndexService.saveIndex(new SearchIndex(page, findLemma, value));
-                });
-                mainLogger.warn(page.getRelPath() + " indexing is complete");
-                mainLogger.warn("End parsing \t" + page.getRelPath());
-            }
-            site.setStatus(SiteStatus.INDEXED);
-            siteService.saveSite(site);
-        }));
-//        threadPool.shutdown();
+
+    public void startIndexingSites(boolean isAllSite, @RequestParam Integer siteId) {
+        if (isAllSite) {
+            siteService.getAllSites().parallelStream().forEach(this::startSiteIndex);
+            mainLogger.info("SITE PARSING IS FINISHED!");
+        } else {
+            Site findSite = siteService.getSite(siteId);
+            startSiteIndex(findSite);
+        }
     }
 
 
     public Site startSiteParse(Site site) {
-
-        if (!site.getUrl().endsWith("/")) {
-            site.setUrl(site.getUrl().concat("/"));
-        }
         SiteParserRunner siteParser = new SiteParserRunner(site, this);
-        if (siteParser.isStarted()) {
-            mainLogger.warn("SiteParser is running!");
-        } else {
-            site.setStatus(SiteStatus.INDEXING);
-            site.setStatusTime(LocalDateTime.now());
-            siteService.saveSite(site);
-            siteParser.run();
-        }
+        site.setStatus(SiteStatus.INDEXING);
+        site.setStatusTime(LocalDateTime.now());
+        siteService.saveSite(site);
+        siteParser.run();
         return site;
     }
 
-
-    public synchronized void insertToDatabase(Link link, Site site) {
-        Page root = new Page(link.getRelUrl());
-        root.setStatusCode(link.getStatusCode());
-        root.setContent(link.getHtml());
-        root.setSite(site);
-        pageService.savePage(root);
-        link.getChildren().forEach(child ->
-                {
-                    insertToDatabase(child, site);
-                }
-        );
-    }
 
     private String createSitemap(Link node) {
         String tabs = String.join("", Collections.nCopies(node.getLayer(), "\t"));
@@ -233,5 +202,9 @@ public class MainService {
 
     public SearchIndexService getSearchIndexService() {
         return searchIndexService;
+    }
+
+    @Override
+    public void run() {
     }
 }

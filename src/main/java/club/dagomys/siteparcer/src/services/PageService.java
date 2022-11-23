@@ -5,10 +5,12 @@ import club.dagomys.siteparcer.src.repos.PageRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class PageService {
@@ -25,9 +27,9 @@ public class PageService {
         }
         return allPages;
     }
-    @Transactional
-    public synchronized Page savePage(Page page) {
-        return pageRepository.save(page);
+//    @Async
+    public CompletableFuture<Page> savePage(Page page) {
+        return CompletableFuture.completedFuture(pageRepository.save(page));
     }
 
     public Page getPageById(Integer id) {
