@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
+@Transactional
 public class PageService {
     private final Logger mainLogger = LogManager.getLogger(PageService.class);
 
@@ -27,9 +28,35 @@ public class PageService {
         }
         return allPages;
     }
-//    @Async
+
+@Async
     public CompletableFuture<Page> savePage(Page page) {
         return CompletableFuture.completedFuture(pageRepository.save(page));
+    }
+
+    @Transactional
+//    public void updatePage(Page page) {
+//        pageRepository
+//                .findByRelPath(page.getRelPath())
+//                .ifPresent(p -> {
+//                    p.setStatusCode(page.getStatusCode());
+//                    p.setContent(page.getContent());
+//                    p.setRelPath(page.getRelPath());
+//                    pageRepository.save(p);
+//                });
+//    }
+@Async
+    public void updatePage(Page page) {
+        pageRepository
+                .findByRelPath(page.getRelPath())
+                .ifPresentOrElse(p -> {
+                    p.setStatusCode(page.getStatusCode());
+                    p.setLink(page.getLink());
+                    p.setRelPath(page.getRelPath());
+                    p.setSite(page.getSite());
+                    p.setContent(page.getContent());
+                    pageRepository.save(p);
+                }, () -> pageRepository.save(page));
     }
 
     public Page getPageById(Integer id) {

@@ -9,6 +9,7 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @Service
+@Transactional
 public class SiteService {
     private final Logger mainLogger = LogManager.getLogger(SiteService.class);
     @Autowired
@@ -26,9 +28,20 @@ public class SiteService {
     private PageService pageService;
 
 
-//    @Async
     public CompletableFuture<Site> saveSite(Site site) {
-        return CompletableFuture.completedFuture(siteRepository.save(siteRepository.findByUrl(site.getUrl()).orElse(site)));
+        return CompletableFuture.completedFuture(siteRepository.save(site));
+    }
+
+
+    public void updateSite(Site site) {
+        siteRepository
+                .findByUrl(site.getUrl())
+                .ifPresentOrElse(s -> {
+                    s.setStatus(site.getStatus());
+                    s.setUrl(site.getUrl());
+                    s.setStatusTime(site.getStatusTime());
+                    siteRepository.save(s);
+                }, () -> siteRepository.save(site));
     }
 
     public Site getSite(String url) {

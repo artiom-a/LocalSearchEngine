@@ -10,24 +10,25 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Calendar;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class SiteParserRunner implements Runnable {
     private Map<String, Lemma> lemmaMap = new ConcurrentHashMap<>();
+    private ArrayList<Link> linkList = new ArrayList<>();
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
-    private final Site site;
+    private volatile Site site;
     private static boolean isStarted = false;
 
 
@@ -48,6 +49,10 @@ public class SiteParserRunner implements Runnable {
         return isStarted;
     }
 
+    public synchronized List<Link> getLinks(){
+        return linkList;
+    }
+
     @Override
     public void run() {
         setStarted(true);
@@ -57,9 +62,9 @@ public class SiteParserRunner implements Runnable {
         try {
             Link rootLink = new Link(site.getUrl());
             ForkJoinPool siteMapPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
-            ForkJoinTask<Link> forkJoinTask = new SiteParser(rootLink);
+            ForkJoinTask<Link> forkJoinTask = new SiteParser(rootLink, mainService);
             siteMapPool.invoke(forkJoinTask);
-            insertToDatabase(rootLink, site);
+//            insertToDatabase(rootLink, site);
             String title = Jsoup.parse(rootLink.getHtml()).title();
             site.setName(title);
             mainService.getSiteService().saveSite(site);
@@ -74,16 +79,5 @@ public class SiteParserRunner implements Runnable {
         }
     }
 
-    private void insertToDatabase(Link link, Site site) {
-        Page root = new Page(link.getRelUrl());
-        root.setStatusCode(link.getStatusCode());
-        root.setContent(link.getHtml());
-        root.setSite(site);
-        mainService.getPageService().savePage(root);
-        link.getChildren().forEach(child ->
-                {
-                    insertToDatabase(child, site);
-                }
-        );
-    }
+
 }

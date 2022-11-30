@@ -1,6 +1,7 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
+import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.Site;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -20,10 +21,13 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 public class SiteParser extends RecursiveTask<Link> {
     private Link rootURL;
+    private MainService mainService;
     private static final Logger mainLogger = LogManager.getLogger(SiteParser.class);
 
-    public SiteParser(Link URL) throws IOException {
-        this.rootURL = URL;
+    public SiteParser(Link rootLink, MainService mainService) throws IOException {
+        this.rootURL = rootLink;
+        this.mainService = mainService;
+//        rootURL.setSite(mainService.getSiteService().getSite(rootURL.getValue()));
     }
 
 
@@ -54,6 +58,7 @@ public class SiteParser extends RecursiveTask<Link> {
 
                     rootURL.setHtml(siteFile.outerHtml());
                     rootURL.setStatusCode(status);
+
                     if (urlChecker(absolutURL)) {
                         Link child = new Link(absolutURL);
                         rootURL.addChild(child, relativeURL);
@@ -61,7 +66,7 @@ public class SiteParser extends RecursiveTask<Link> {
 
                 });
                 for (Link child : rootURL.getChildren()) {
-                    SiteParser childParser = new SiteParser(child);
+                    SiteParser childParser = new SiteParser(child, mainService);
                     childParser.fork();
                     childParserList.add(childParser);
                 }
@@ -73,6 +78,7 @@ public class SiteParser extends RecursiveTask<Link> {
         } catch (IOException | InterruptedException e) {
             mainLogger.error(e.getMessage());
         }
+//        insertToDatabase(rootURL);
         return rootURL;
     }
 
@@ -87,5 +93,4 @@ public class SiteParser extends RecursiveTask<Link> {
                         !file.matcher(url).find() &
                         !anchor.matcher(url).find();
     }
-
 }

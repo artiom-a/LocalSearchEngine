@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 @Service
 public class MainService extends Thread {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
     private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(CORE_COUNT);
+    private final ForkJoinPool siteMapPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
     @Autowired
     private FieldService fieldService;
@@ -131,26 +131,41 @@ public class MainService extends Thread {
         mainLogger.info("lemmas rank\t {} {}ms", lemmas.size(), endTime - startTime);
         return lemmas;
     }
-
-    private void createSearchSiteIndexes(Site site) {
+    private void insertToDatabase(Link link) {
+        Page root = new Page(link);
+        pageService.updatePage(root);
+        link.getChildren().forEach(this::insertToDatabase);
+    }
+    private void saveSearchIndexes(Site site) {
         for (Page page : siteService.findPageBySite(site)) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
             Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
             indexedPageMap.forEach((key, value) -> {
                 Lemma findLemma = lemmaService.findLemma(key).get();
-                searchIndexService.saveIndex(new SearchIndex(page, findLemma, value));
+                synchronized (SearchIndex.class) {
+                    searchIndexService.saveIndex(new SearchIndex(page, findLemma, value));
+                }
             });
             mainLogger.warn(page.getRelPath() + " indexing is complete");
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
     }
 
+
     private void startSiteIndex(Site site) {
-        startSiteParse(site);
-        countLemmaFrequency(site);
-        createSearchSiteIndexes(site);
-        site.setStatus(SiteStatus.INDEXED);
-        siteService.saveSite(site);
+
+        try {
+            startSiteParse(site);
+        } catch (Exception ex) {
+            mainLogger.error(ex.getMessage());
+        }
+        synchronized (Site.class) {
+            countLemmaFrequency(site);
+            saveSearchIndexes(site);
+            site.setStatusTime(LocalDateTime.now());
+            site.setStatus(SiteStatus.INDEXED);
+            siteService.updateSite(site);
+        }
     }
 
 
@@ -165,15 +180,25 @@ public class MainService extends Thread {
     }
 
 
-    public Site startSiteParse(Site site) {
-        SiteParserRunner siteParser = new SiteParserRunner(site, this);
+    public void startSiteParse(Site site) throws IOException {
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(LocalDateTime.now());
-        siteService.saveSite(site);
-        siteParser.run();
-        return site;
+        siteService.updateSite(site);
+
+        Link rootLink = new Link(site.getUrl());
+        mainLogger.info(rootLink);
+        RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, this);
+        siteMapPool.invoke(forkJoinTask);
+        insertToDatabase(rootLink);
     }
 
+//    private void insertToDatabase(Link link, Site site) {
+//        link.getChildren().forEach(child ->
+//                {
+//                    insertToDatabase(child, site);
+//                }
+//        );
+//    }
 
     private String createSitemap(Link node) {
         String tabs = String.join("", Collections.nCopies(node.getLayer(), "\t"));

@@ -1,5 +1,6 @@
 package club.dagomys.siteparcer.src.entity;
 
+import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,11 +26,18 @@ public class Site {
     private LocalDateTime statusTime;
     @Column(name = "last_error")
     private String lastError;
+    @Transient
+    private Link rootLink;
 
-    public Site(String url, String name) {
-        this.url = url;
+    public Site(Link rootLink, String name) {
+        this.rootLink = rootLink;
+        this.url = rootLink.getValue();
         this.name = name;
+    }
 
+    public Site(URLRequest URL) {
+        this.url = URL.getPath();
+        this.name = name;
     }
 
 }

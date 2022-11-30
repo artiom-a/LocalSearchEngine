@@ -1,13 +1,11 @@
 package club.dagomys.siteparcer.src.controllers;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
-import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.services.LemmaService;
 import club.dagomys.siteparcer.src.services.MainService;
 import club.dagomys.siteparcer.src.services.SearchIndexService;
-import club.dagomys.siteparcer.src.services.SiteIndexing;
 import com.mysql.cj.xdevapi.JsonString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api")

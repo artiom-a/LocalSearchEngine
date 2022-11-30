@@ -1,5 +1,6 @@
 package club.dagomys.siteparcer.src.controllers;
 
+import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.services.MainService;
@@ -16,6 +17,7 @@ import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 @Controller
@@ -32,7 +34,7 @@ public class IndexingController {
     private SiteService siteService;
 
     @GetMapping(value = {"/startIndexing"})
-    public String startIndexing(Model model, @RequestParam(name="siteId", required=false, defaultValue="0") int siteId) throws ExecutionException, InterruptedException {
+    public String startIndexing(Model model, @RequestParam(name="siteId", required=false, defaultValue="0") int siteId) throws ExecutionException, InterruptedException, IOException {
         mainService.startIndexingSites(true, siteId);
         return "redirect:/lemmas";
     }
@@ -52,11 +54,11 @@ public class IndexingController {
     public String addUrl(@Valid @ModelAttribute("URL") URLRequest URL, Errors errors, Model model) {
         if (!errors.hasErrors()) {
             mainLogger.info(URL);
-            Site newSite = new Site(URL.getPath(), "");
+            Site newSite = new Site(new Link(URL.getPath()),"");
             if (!newSite.getUrl().endsWith("/")) {
                 newSite.setUrl(newSite.getUrl().concat("/"));
             }
-            siteService.saveSite(newSite);
+            siteService.updateSite(newSite);
             return "redirect:/sites";
         } else {
             mainLogger.info(errors.getAllErrors());
@@ -72,7 +74,7 @@ public class IndexingController {
     }
 
     @GetMapping("/sites/{id}")
-    public String getSite(@PathVariable(value = "id") Integer id) throws ExecutionException, InterruptedException {
+    public String getSite(@PathVariable(value = "id") Integer id) throws ExecutionException, InterruptedException, IOException {
         mainService.startIndexingSites(false, id);
         return "redirect:/sites";
     }

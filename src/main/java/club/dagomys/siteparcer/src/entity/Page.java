@@ -18,8 +18,8 @@ import java.util.List;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(indexes = {@Index(name = "page_index", columnList = "path") })
-public class Page{
+@Table(indexes = {@Index(name = "page_index", columnList = "path")})
+public class Page {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,14 +33,20 @@ public class Page{
     @Type(type = "org.hibernate.type.TextType")
     private String content;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade=CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "site_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;
+    @Transient
+    private Link link;
 
-    public Page(String URL) {
-        this.relPath = URL.strip();
-        statusCode = 0;
+    public Page(Link URL) {
+        this.link = URL;
+        this.relPath = URL.getRelUrl().strip();
+        this.statusCode = URL.getStatusCode();
+        this.content = URL.getHtml();
+        this.site = URL.getSite();
+
     }
 
 //    @Override
