@@ -26,9 +26,22 @@ public class SiteService {
     private PageService pageService;
 
 
-//    @Async
+    @Async("taskExecutor")
     public CompletableFuture<Site> saveSite(Site site) {
-        return CompletableFuture.completedFuture(siteRepository.save(siteRepository.findByUrl(site.getUrl()).orElse(site)));
+        return CompletableFuture.completedFuture(siteRepository.save(site));
+    }
+
+    @Async
+    public void updateSite(Site site) {
+        siteRepository
+                .findById(site.getId())
+                .ifPresentOrElse(s -> {
+                    s.setStatus(site.getStatus());
+                    s.setUrl(site.getUrl());
+                    s.setStatusTime(site.getStatusTime());
+                    s.setRootLink(site.getRootLink());
+                    siteRepository.save(s);
+                }, () -> siteRepository.save(site));
     }
 
     public Site getSite(String url) {

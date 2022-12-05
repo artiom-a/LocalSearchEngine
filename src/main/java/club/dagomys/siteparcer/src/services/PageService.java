@@ -27,9 +27,24 @@ public class PageService {
         }
         return allPages;
     }
-//    @Async
+
+    @Async("taskExecutor")
     public CompletableFuture<Page> savePage(Page page) {
         return CompletableFuture.completedFuture(pageRepository.save(page));
+    }
+
+
+    public void updatePage(Page page) {
+        pageRepository
+                .findByRelPathAndSite(page.getRelPath(), page.getSite())
+                .ifPresentOrElse(p -> {
+                    p.setLink(page.getLink());
+                    p.setSite(page.getSite());
+                    p.setContent(page.getContent());
+                    p.setStatusCode(page.getStatusCode());
+                    p.setRelPath(page.getRelPath());
+                    pageRepository.save(p);
+                }, () -> pageRepository.save(page));
     }
 
     public Page getPageById(Integer id) {
@@ -37,6 +52,7 @@ public class PageService {
     }
 
     public List<Page> getPagesBySite(Site site) {
+        mainLogger.info(pageRepository.getPageBySite(site));
         return pageRepository.getPageBySite(site).orElse(null);
     }
 

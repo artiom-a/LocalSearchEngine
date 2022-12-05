@@ -36,7 +36,7 @@ public class SearchIndexService {
     @Autowired
     private SiteService siteService;
 
-//    @Async
+    @Async("taskExecutor")
     public CompletableFuture<SearchIndex> saveIndex(SearchIndex searchIndex) {
         return CompletableFuture.completedFuture(searchIndexRepository.save(searchIndex));
     }

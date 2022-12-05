@@ -20,10 +20,21 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 public class SiteParser extends RecursiveTask<Link> {
     private Link rootURL;
+    private Site site;
+
+    private MainService mainService;
     private static final Logger mainLogger = LogManager.getLogger(SiteParser.class);
 
-    public SiteParser(Link URL) throws IOException {
-        this.rootURL = URL;
+    public SiteParser(Link link) throws IOException {
+        this.rootURL = link;
+    }
+
+    public SiteParser(Link rootLink, MainService mainService, Site site) throws IOException {
+        this.rootURL = rootLink;
+        this.mainService = mainService;
+        this.site = site;
+//        mainLogger.info(site);
+//        rootURL.setSite());
     }
 
 
@@ -54,6 +65,7 @@ public class SiteParser extends RecursiveTask<Link> {
 
                     rootURL.setHtml(siteFile.outerHtml());
                     rootURL.setStatusCode(status);
+                    rootURL.setSite(site);
                     if (urlChecker(absolutURL)) {
                         Link child = new Link(absolutURL);
                         rootURL.addChild(child, relativeURL);
@@ -61,7 +73,7 @@ public class SiteParser extends RecursiveTask<Link> {
 
                 });
                 for (Link child : rootURL.getChildren()) {
-                    SiteParser childParser = new SiteParser(child);
+                    SiteParser childParser = new SiteParser(child, mainService, site);
                     childParser.fork();
                     childParserList.add(childParser);
                 }

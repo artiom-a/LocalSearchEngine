@@ -32,7 +32,7 @@ public class LemmaService {
         lemmaRepository.saveAll(lemmaList);
     }
 
-//    @Async
+    @Async("taskExecutor")
     public CompletableFuture<Lemma> saveLemma(Lemma lemma) {
         return CompletableFuture.completedFuture(lemmaRepository.save(lemma));
     }

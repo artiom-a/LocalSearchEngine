@@ -37,10 +37,13 @@ public class Page{
     @JoinColumn(name = "site_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;
+    @Transient
+    private Link link;
 
-    public Page(String URL) {
-        this.relPath = URL.strip();
-        statusCode = 0;
+    public Page(Link link) {
+        this.relPath = link.getRelUrl();
+        this.statusCode = link.getStatusCode();
+        this.content = link.getHtml();
     }
 
 //    @Override

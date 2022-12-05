@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 @Service
 public class MainService extends Thread {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
-    private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(CORE_COUNT);
+    ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
+
 
     @Autowired
     private FieldService fieldService;
@@ -41,8 +41,9 @@ public class MainService extends Thread {
     @Autowired
     private PageService pageService;
 
+/*
 
-    private Map<String, Integer> countLemmaFrequency(Site site) {
+    public Map<String, Integer> countLemmaFrequency(Site site) {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
         for (Page page : pageService.getPagesBySite(site)) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
@@ -132,7 +133,7 @@ public class MainService extends Thread {
         return lemmas;
     }
 
-    private void createSearchSiteIndexes(Site site) {
+    public void createSearchSiteIndexes(Site site) {
         for (Page page : siteService.findPageBySite(site)) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
             Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
@@ -146,31 +147,37 @@ public class MainService extends Thread {
     }
 
     private void startSiteIndex(Site site) {
-        startSiteParse(site);
+        try {
+            startSiteParse(site);
+        } catch (Exception ex) {
+            mainLogger.error(ex.getMessage());
+        }
         countLemmaFrequency(site);
         createSearchSiteIndexes(site);
-        site.setStatus(SiteStatus.INDEXED);
-        siteService.saveSite(site);
+
     }
+*/
 
 
     public void startIndexingSites(boolean isAllSite, @RequestParam Integer siteId) {
         if (isAllSite) {
-            siteService.getAllSites().parallelStream().forEach(this::startSiteIndex);
+            siteService.getAllSites().parallelStream().forEach(site -> new SiteParserRunner(site, this).run());
             mainLogger.info("SITE PARSING IS FINISHED!");
         } else {
             Site findSite = siteService.getSite(siteId);
-            startSiteIndex(findSite);
+            new SiteParserRunner(findSite, this).run();
         }
     }
 
+/*
 
-    public Site startSiteParse(Site site) {
-        SiteParserRunner siteParser = new SiteParserRunner(site, this);
+    public Site startSiteParse(Site site) throws IOException {
+        Link rootLink = new Link(site.getUrl());
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(LocalDateTime.now());
-        siteService.saveSite(site);
-        siteParser.run();
+        siteService.updateSite(site);
+        RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, this, site);
+        siteMapPool.invoke(forkJoinTask);
         return site;
     }
 
@@ -183,6 +190,7 @@ public class MainService extends Thread {
         });
         return result.toString();
     }
+*/
 
     public FieldService getFieldService() {
         return fieldService;
@@ -204,7 +212,4 @@ public class MainService extends Thread {
         return searchIndexService;
     }
 
-    @Override
-    public void run() {
-    }
 }

@@ -13,6 +13,7 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -32,7 +33,7 @@ public class FieldService {
         }
         return fields;
     }
-
+    @Async("taskExecutor")
     public Field saveField(Field field) {
         return fieldRepository.save(field);
     }

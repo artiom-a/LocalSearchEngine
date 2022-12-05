@@ -19,6 +19,8 @@ public class Link implements Node, Comparable<Link> {
     private int statusCode;
     private String html;
 
+    private Site site;
+
     public Link(String URL) {
         layer = 0;
         parentLink = null;
@@ -125,6 +127,14 @@ public class Link implements Node, Comparable<Link> {
         return html;
     }
 
+    public Site getSite() {
+        return site;
+    }
+
+    public void setSite(Site site) {
+        this.site = site;
+    }
+
 
     @Override
     public int compareTo(Link o) {
@@ -140,6 +150,7 @@ public class Link implements Node, Comparable<Link> {
                 ", status=" + statusCode +
                 ", parentLink=" + parentLink +
                 ", layer=" + layer +
+                ", site=" + site.getId() +
                 '}';
     }
 }

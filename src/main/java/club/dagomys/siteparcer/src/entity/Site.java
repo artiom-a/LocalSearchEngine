@@ -7,6 +7,7 @@ import lombok.ToString;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @ToString
@@ -25,11 +26,12 @@ public class Site {
     private LocalDateTime statusTime;
     @Column(name = "last_error")
     private String lastError;
+    @Transient
+    private Link rootLink;
 
-    public Site(String url, String name) {
-        this.url = url;
-        this.name = name;
-
+    public Site(Link rootLink) {
+        this.rootLink = rootLink;
+        this.url = rootLink.getValue();
     }
 
 }

@@ -52,8 +52,8 @@ private MainService mainService;
     @GetMapping(value = {"/{id}"})
     public String getPageById(@ModelAttribute("id") Integer id, Model model) {
         Page findPage = pageService.getPageById(id);
-        Map<String, Lemma> lemmas = mainService.countLemmasOnPage(findPage);
-        model.addAttribute("lemmas", lemmas);
+//        Map<String, Lemma> lemmas = mainService.countLemmasOnPage(findPage);
+//        model.addAttribute("lemmas", lemmas);
         model.addAttribute("findPage", findPage);
         return "update_page";
     }

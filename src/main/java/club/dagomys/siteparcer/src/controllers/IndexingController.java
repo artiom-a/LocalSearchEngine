@@ -1,9 +1,12 @@
 package club.dagomys.siteparcer.src.controllers;
 
+import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.Site;
+import club.dagomys.siteparcer.src.entity.SiteStatus;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.services.MainService;
 import club.dagomys.siteparcer.src.services.SearchIndexService;
+import club.dagomys.siteparcer.src.services.SiteParserRunner;
 import club.dagomys.siteparcer.src.services.SiteService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +19,7 @@ import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.concurrent.ExecutionException;
 
 @Controller
@@ -52,11 +56,12 @@ public class IndexingController {
     public String addUrl(@Valid @ModelAttribute("URL") URLRequest URL, Errors errors, Model model) {
         if (!errors.hasErrors()) {
             mainLogger.info(URL);
-            Site newSite = new Site(URL.getPath(), "");
+            Link rootLink = new Link(URL.getPath());
+            Site newSite = new Site(rootLink);
             if (!newSite.getUrl().endsWith("/")) {
                 newSite.setUrl(newSite.getUrl().concat("/"));
             }
-            siteService.saveSite(newSite);
+            siteService.updateSite(newSite);
             return "redirect:/sites";
         } else {
             mainLogger.info(errors.getAllErrors());

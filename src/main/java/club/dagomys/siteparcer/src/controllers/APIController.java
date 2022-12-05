@@ -7,7 +7,6 @@ import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.services.LemmaService;
 import club.dagomys.siteparcer.src.services.MainService;
 import club.dagomys.siteparcer.src.services.SearchIndexService;
-import club.dagomys.siteparcer.src.services.SiteIndexing;
 import com.mysql.cj.xdevapi.JsonString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
