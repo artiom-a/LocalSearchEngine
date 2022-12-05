@@ -1,7 +1,6 @@
 package club.dagomys.siteparcer.src.controllers;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
-import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.services.LemmaService;
@@ -14,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api")
