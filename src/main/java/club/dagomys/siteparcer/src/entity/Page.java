@@ -28,7 +28,7 @@ public class Page implements Serializable {
     @Type(type = "org.hibernate.type.TextType")
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.ALL)
+    @ManyToOne(cascade=CascadeType.MERGE, fetch = FetchType.EAGER)
     @JoinColumn(name = "site_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;

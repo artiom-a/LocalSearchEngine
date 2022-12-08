@@ -162,11 +162,23 @@ public class MainService {
     @Async("taskExecutor")
     public void startIndexingSites(boolean isAllSite, @RequestParam Integer siteId) {
         if (isAllSite) {
-            siteService.getAllSites().join().parallelStream().forEach(site -> new SiteParserRunner(site, this).run());
+            siteService.getAllSites().join().parallelStream().forEach(site ->{
+                SiteParserRunner parser = new SiteParserRunner(site, this);
+                if (parser.isStarted()){
+                    mainLogger.error("parser is running...");
+                } else {
+                    parser.run();
+                }
+            });
             mainLogger.info("SITE PARSING IS FINISHED!");
         } else {
             Site findSite = siteService.getSite(siteId).join();
-            new SiteParserRunner(findSite, this).run();
+            SiteParserRunner parser = new SiteParserRunner(findSite, this);
+            if (parser.isStarted()){
+                mainLogger.info("parser is running...");
+            } else {
+                parser.run();
+            }
         }
     }
 

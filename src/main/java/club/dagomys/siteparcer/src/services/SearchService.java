@@ -11,7 +11,9 @@ import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.*;
@@ -36,19 +38,21 @@ public class SearchService {
 
     private LemmaCounter counter;
 
-    public List<SearchResponse> search(SearchRequest searchLine) {
+    @Async
+    @Transactional
+    public CompletableFuture<List<SearchResponse>> search(SearchRequest searchLine) {
         mainLogger.info("Поисковый запрос \t" + searchLine);
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
-        List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
+        List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma).join();
         List<Page> pageIndexes = new ArrayList<>();
         List<SearchResponse> searchResponses = new ArrayList<>();
         indexingList.forEach(indexing -> pageIndexes.add(indexing.getPage()));
 
         for (Lemma lemma : findLemmas) {
             if (!pageIndexes.isEmpty() && lemma != minFreqLemma) {
-                List<SearchIndex> secondIndexSearch = searchIndexService.findIndexByLemma(lemma);
+                List<SearchIndex> secondIndexSearch = searchIndexService.findIndexByLemma(lemma).join();
                 List<Page> tempList = new ArrayList<>();
                 secondIndexSearch.forEach(indexing -> tempList.add(indexing.getPage()));
                 findPages.retainAll(tempList);
@@ -62,7 +66,7 @@ public class SearchService {
             mainLogger.info("RESPONSE " + response);
         });
 
-        return searchResponses;
+        return CompletableFuture.completedFuture(searchResponses);
     }
 
     private SearchResponse getResponse(Page page, float relevance, List<Lemma> requestLemmas) {
@@ -86,7 +90,7 @@ public class SearchService {
             string.append(getTitle(page)).append("</a>");
             return string.toString();
         } else {
-            string.append(page.getSite().getUrl()).append(page.getRelPath().replaceFirst("/","")).append("\">");
+            string.append(page.getSite().getUrl()).append(page.getRelPath().replaceFirst("/", "")).append("\">");
             string.append(getTitle(page)).append("</a>");
             return string.toString();
         }
@@ -197,13 +201,14 @@ public class SearchService {
         return sortedMap;
     }
 
+
     private List<Lemma> getLemmasFromRequest(String searchLine) {
         List<Lemma> findLemmas = new ArrayList<>();
         try {
             counter = new LemmaCounter(searchLine);
             Map<String, Integer> lemmas = counter.countLemmas();
             lemmas.forEach((key, value) -> {
-                Optional<Lemma> findLemma = lemmaService.findLemma(key);
+                Optional<Lemma> findLemma = lemmaService.findLemma(key).join();
                 findLemma.ifPresentOrElse(findLemmas::add, ArrayList::new);
             });
             deleteCommonLemmas(findLemmas);
@@ -233,7 +238,7 @@ public class SearchService {
         if (lemma == null) {
             mainLogger.info("empty lemma indexed");
         } else {
-            findPages = new ArrayList<>(searchIndexService.findIndexByLemma(lemma));
+            findPages = new ArrayList<>(searchIndexService.findIndexByLemma(lemma).join());
         }
         return findPages.stream().map(SearchIndex::getPage).collect(Collectors.toList());
     }

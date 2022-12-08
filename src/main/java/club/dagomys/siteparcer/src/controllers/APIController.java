@@ -63,7 +63,7 @@ public class APIController {
     @GetMapping(value = "/statistics", produces = "application/json")
     public @ResponseBody
     ResponseEntity<JsonString> getStatistic() {
-        Lemma lemma = mainService.getLemmaService().findLemma("ожидать").get();
+        Lemma lemma = mainService.getLemmaService().findLemma("ожидать").join().get();
         JsonString s = new JsonString();
         s.setValue("temp");
         return new ResponseEntity<>(s, HttpStatus.OK);

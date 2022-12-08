@@ -28,11 +28,11 @@ public class SearchIndex {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     @JoinColumn(name = "page_id")
-    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.EAGER, cascade=CascadeType.MERGE)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Page page;
     @JoinColumn(name = "lemma_id")
-    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.EAGER, cascade=CascadeType.MERGE)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Lemma lemma;
     @Column(name = "`rank`")

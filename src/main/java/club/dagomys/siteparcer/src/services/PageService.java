@@ -38,21 +38,21 @@ public class PageService {
     }
 
 
-/*    @Async("taskExecutor")
-    @Transactional
-    public void updatePage(Page page) {
-        mainLogger.warn(page);
-        pageRepository
-                .findByRelPathAndSite(page.getRelPath(), page.getSite())
-                .ifPresentOrElse(p -> {
-                    p.setLink(page.getLink());
-                    p.setSite(page.getSite());
-                    p.setContent(page.getContent());
-                    p.setStatusCode(page.getStatusCode());
-                    p.setRelPath(page.getRelPath());
-                    pageRepository.saveAndFlush(p);
-                }, () -> pageRepository.saveAndFlush(page));
-    }*/
+    /*    @Async("taskExecutor")
+        @Transactional
+        public void updatePage(Page page) {
+            mainLogger.warn(page);
+            pageRepository
+                    .findByRelPathAndSite(page.getRelPath(), page.getSite())
+                    .ifPresentOrElse(p -> {
+                        p.setLink(page.getLink());
+                        p.setSite(page.getSite());
+                        p.setContent(page.getContent());
+                        p.setStatusCode(page.getStatusCode());
+                        p.setRelPath(page.getRelPath());
+                        pageRepository.saveAndFlush(p);
+                    }, () -> pageRepository.saveAndFlush(page));
+        }*/
     @Async("taskExecutor")
     @Transactional
     public void updatePage(Page page) {
@@ -82,9 +82,10 @@ public class PageService {
         pageRepository.delete(page);
     }
 
-    public List<Page> getPagesBySite(Site site) {
-        mainLogger.info(pageRepository.getPageBySite(site));
-        return pageRepository.getPageBySite(site).orElse(null);
+    @Async("taskExecutor")
+    @Transactional
+    public CompletableFuture<List<Page>> getPagesBySite(Site site) {
+        return CompletableFuture.completedFuture(pageRepository.getPageBySite(site).orElse(null));
     }
 
     public Page getByRelPathAndSite(String path, Site site) {

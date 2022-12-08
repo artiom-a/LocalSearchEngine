@@ -19,11 +19,11 @@ public class Lemma implements Comparable<Lemma> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
     private String lemma;
     private int frequency;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     @JoinColumn(name = "site_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;

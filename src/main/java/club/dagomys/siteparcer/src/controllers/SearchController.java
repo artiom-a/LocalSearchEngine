@@ -41,7 +41,7 @@ public class SearchController {
     @PostMapping("/search")
     public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model) {
         if (!errors.hasErrors()) {
-            searchResponses = searchService.search(searchRequest);
+            searchResponses = searchService.search(searchRequest).join();
             return "redirect:/search";
         } else {
             mainLogger.info(errors.getAllErrors());

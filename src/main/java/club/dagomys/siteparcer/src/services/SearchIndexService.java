@@ -11,6 +11,7 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class SearchIndexService {
     private SiteService siteService;
 
     @Async("taskExecutor")
+    @Transactional
     public CompletableFuture<SearchIndex> saveIndex(SearchIndex searchIndex) {
         return CompletableFuture.completedFuture(searchIndexRepository.save(searchIndex));
     }
@@ -48,16 +50,20 @@ public class SearchIndexService {
     }
 
 
-    public List<SearchIndex> findIndexByLemma(Lemma lemma) {
-        return searchIndexRepository.findByLemmaOrderByRankDesc(lemma);
+    @Async("taskExecutor")
+    @Transactional
+    public CompletableFuture<List<SearchIndex>> findIndexByLemma(Lemma lemma) {
+        return CompletableFuture.completedFuture(searchIndexRepository.findByLemmaOrderByRankDesc(lemma));
     }
 
     public List<SearchIndex> findIndexByPage(Page page) {
         return searchIndexRepository.findByPage(page);
     }
 
+    @Async("taskExecutor")
+    @Transactional
     public SearchIndex findIndexByPageAndLemma(Page page, Lemma lemma) throws Throwable {
-        return searchIndexRepository.findByPageAndLemma(page, lemma).orElseThrow(()->
+        return searchIndexRepository.findByPageAndLemma(page, lemma).orElseThrow(() ->
                 new EntityNotFoundException("SearchIndex object is not found " + page.getRelPath() + "\t" + lemma.getLemma()));
     }
 }

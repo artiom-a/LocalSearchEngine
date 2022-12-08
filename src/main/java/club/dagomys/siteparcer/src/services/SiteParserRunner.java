@@ -29,9 +29,9 @@ import java.util.concurrent.RecursiveTask;
 public class SiteParserRunner implements Runnable {
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
-    ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
-    private Site site;
-    private static boolean isStarted = false;
+    private final ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
+    private final Site site;
+    private volatile boolean isStarted = false;
 
 
     @Autowired
@@ -43,11 +43,11 @@ public class SiteParserRunner implements Runnable {
         this.site = site;
     }
 
-    private synchronized void setStarted(boolean started) {
+    private void setStarted(boolean started) {
         isStarted = started;
     }
 
-    public synchronized boolean isStarted() {
+    public boolean isStarted() {
         return isStarted;
     }
 
@@ -64,8 +64,8 @@ public class SiteParserRunner implements Runnable {
 
             Link siteLinks = getSiteLinks();
             insertToDatabase(siteLinks);
-//            countLemmaFrequency(site);
-//            createSearchSiteIndexes(site);
+            countLemmaFrequency();
+            createSearchSiteIndexes();
         } catch (Exception ex) {
             mainLogger.error(ex.getMessage());
         }
@@ -81,9 +81,10 @@ public class SiteParserRunner implements Runnable {
     }
 
 
-    private Map<String, Integer> countLemmaFrequency(Site site) {
+    private Map<String, Integer> countLemmaFrequency() {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
-        for (Page page : mainService.getPageService().getPagesBySite(site)) {
+        mainLogger.info(mainService.getPageService().getPagesBySite(site));
+        for (Page page : mainService.getPageService().getPagesBySite(site).join()) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
             Map<String, Lemma> indexedPageMap = countLemmasOnPage(page);
             indexedPageMap.forEach((key, value) -> {
@@ -99,11 +100,10 @@ public class SiteParserRunner implements Runnable {
 //        mainLogger.info(lemmaMap.size());
         indexedPagesLemmas.forEach((key, value) -> {
             Lemma lemma = new Lemma(key, value);
-//            lemma.setSite(site);
-            CompletableFuture<Lemma> test = mainService.getLemmaService().saveLemma(lemma);
-            mainService.getLemmaService().findLemma(lemma.getLemma()).ifPresentOrElse(l -> l.setSite(site), () -> mainService.getLemmaService().saveLemma(lemma));
+            lemma.setSite(this.site);
+            mainLogger.info(lemma);
 
-            mainLogger.info(test.join());
+            mainService.getLemmaService().saveLemma(lemma);
         });
         return indexedPagesLemmas;
     }
@@ -174,32 +174,17 @@ public class SiteParserRunner implements Runnable {
         return lemmas;
     }
 
-    private void createSearchSiteIndexes(Site site) {
-        for (Page page : mainService.getSiteService().findPageBySite(site)) {
+    private void createSearchSiteIndexes() {
+        for (Page page : mainService.getPageService().getPagesBySite(site).join()) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
             Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
             indexedPageMap.forEach((key, value) -> {
-                Lemma findLemma = mainService.getLemmaService().findLemma(key).get();
-                mainLogger.info(findLemma);
+                Lemma findLemma = mainService.getLemmaService().findLemma(key).join().get();
+//                mainLogger.info(findLemma);
                 mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
             });
             mainLogger.warn(page.getRelPath() + " indexing is complete");
             mainLogger.warn("End parsing \t" + page.getRelPath());
-        }
-    }
-
-    private void startSiteIndex(Site site) {
-
-    }
-
-
-    public void startIndexingSites(boolean isAllSite, @RequestParam Integer siteId) {
-        if (isAllSite) {
-            mainService.getSiteService().getAllSites().join().parallelStream().forEach(this::startSiteIndex);
-            mainLogger.info("SITE PARSING IS FINISHED!");
-        } else {
-            Site findSite = mainService.getSiteService().getSite(siteId).join();
-            startSiteIndex(findSite);
         }
     }
 

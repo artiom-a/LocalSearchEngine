@@ -67,10 +67,10 @@ public class SiteService {
         siteRepository.findAll().forEach(sites::add);
         return CompletableFuture.completedFuture(sites);
     }
-    @Async("taskExecutor")
-    public List<Page> findPageBySite(Site site) {
-        return pageService.getPagesBySite(site);
-    }
+/*    @Async("taskExecutor")
+    public CompletableFuture<List<Page>> findPageBySite(Site site) {
+        return CompletableFuture.completedFuture(pageService.getPagesBySite(site));
+    }*/
 
     @Async("taskExecutor")
     public void deleteSite(Site site) {
