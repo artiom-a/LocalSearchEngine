@@ -7,11 +7,13 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
+@Transactional
 public class LemmaService {
     private final Logger mainLogger = LogManager.getLogger(LemmaService.class);
 
@@ -32,13 +34,25 @@ public class LemmaService {
         lemmaRepository.saveAll(lemmaList);
     }
 
-    @Async("taskExecutor")
     public CompletableFuture<Lemma> saveLemma(Lemma lemma) {
         return CompletableFuture.completedFuture(lemmaRepository.save(lemma));
     }
 
+    public void update(Lemma lemma) {
+        lemmaRepository
+                .findByLemmaAndSite(lemma.getLemma(), lemma.getSite())
+                .ifPresent(l -> {
+                    l.setFrequency(lemma.getFrequency());
+                    lemmaRepository.save(l);
+                });
+    }
+
     public Iterable<Lemma> saveAllLemmas(Set<Lemma> lemmas) {
         return lemmaRepository.saveAllAndFlush(lemmas);
+    }
+
+    public void deleteLemma(Lemma lemma) {
+        lemmaRepository.delete(lemma);
     }
 
     public void deleteAllLemma() {

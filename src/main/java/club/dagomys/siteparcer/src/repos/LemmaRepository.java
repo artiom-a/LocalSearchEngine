@@ -13,7 +13,5 @@ public interface LemmaRepository extends JpaRepository<Lemma, Integer> {
     Optional<Lemma> findByLemma (String name);
     Optional<Lemma> findByLemmaAndSite (String name, Site site);
 
-    @Async
-    public <S extends Lemma> S save(S entity);
 
 }

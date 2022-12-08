@@ -1,7 +1,10 @@
 package club.dagomys.siteparcer.src.entity;
 
+import club.dagomys.siteparcer.src.services.MainService;
+import club.dagomys.siteparcer.src.services.SiteService;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -20,14 +23,13 @@ public class Link implements Node, Comparable<Link> {
     private String html;
     private Site site;
 
-    private Site site;
-
     public Link(String URL) {
         layer = 0;
         parentLink = null;
         this.URL = URL.strip();
         childSet = new TreeSet<>();
         statusCode = 0;
+        this.site = new Site();
     }
 
     public int getLayer() {
@@ -115,7 +117,7 @@ public class Link implements Node, Comparable<Link> {
         return relUrl;
     }
 
-    private void setRelUrl(String relUrl) {
+    public void setRelUrl(String relUrl) {
         this.relUrl = relUrl;
     }
 
@@ -153,13 +155,5 @@ public class Link implements Node, Comparable<Link> {
                 ", layer=" + layer +
                 ", site=" + site.getId() +
                 '}';
-    }
-
-    public Site getSite() {
-        return site;
-    }
-
-    public void setSite(Site site) {
-        this.site = site;
     }
 }

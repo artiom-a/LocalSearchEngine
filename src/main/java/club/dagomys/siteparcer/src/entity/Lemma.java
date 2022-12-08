@@ -1,23 +1,19 @@
 package club.dagomys.siteparcer.src.entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
-import java.util.List;
 import java.util.Objects;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@ToString
-@Table(indexes = {@Index(name = "lemma_index", columnList = "lemma") })
+@Table(indexes = {@Index(name = "lemma_index", columnList = "lemma")})
 public class Lemma implements Comparable<Lemma> {
 
 
@@ -27,8 +23,8 @@ public class Lemma implements Comparable<Lemma> {
     private String lemma;
     private int frequency;
 
-    @ManyToOne(cascade=CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "site_id")
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "site_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;
 

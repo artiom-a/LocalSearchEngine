@@ -1,17 +1,12 @@
 package club.dagomys.siteparcer.src.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.Type;
-import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
-import java.util.Comparator;
-import java.util.List;
+import java.io.Serializable;
 
 @Data
 @ToString
@@ -19,11 +14,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(indexes = {@Index(name = "page_index", columnList = "path") })
-public class Page{
+public class Page implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
     @Column(name = "path", length = 700)
     private String relPath;
     @Column(name = "code")
@@ -33,7 +28,7 @@ public class Page{
     @Type(type = "org.hibernate.type.TextType")
     private String content;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade=CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.ALL)
     @JoinColumn(name = "site_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;
@@ -44,6 +39,7 @@ public class Page{
         this.relPath = link.getRelUrl();
         this.statusCode = link.getStatusCode();
         this.content = link.getHtml();
+        this.site = link.getSite();
     }
 
 //    @Override

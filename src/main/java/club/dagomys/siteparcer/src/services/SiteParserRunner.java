@@ -9,6 +9,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -36,7 +38,7 @@ public class SiteParserRunner implements Runnable {
     private final MainService mainService;
 
     @Autowired
-    public SiteParserRunner(@Value("${site.name}") Site site, MainService mainService) {
+    public SiteParserRunner(Site site, MainService mainService) {
         this.mainService = mainService;
         this.site = site;
     }
@@ -59,9 +61,11 @@ public class SiteParserRunner implements Runnable {
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
         try {
-            startSiteParse(site);
-            countLemmaFrequency(site);
-            createSearchSiteIndexes(site);
+
+            Link siteLinks = getSiteLinks();
+            insertToDatabase(siteLinks);
+//            countLemmaFrequency(site);
+//            createSearchSiteIndexes(site);
         } catch (Exception ex) {
             mainLogger.error(ex.getMessage());
         }
@@ -97,7 +101,7 @@ public class SiteParserRunner implements Runnable {
             Lemma lemma = new Lemma(key, value);
 //            lemma.setSite(site);
             CompletableFuture<Lemma> test = mainService.getLemmaService().saveLemma(lemma);
-            mainService.getLemmaService().findLemma(lemma.getLemma()).ifPresentOrElse(l->l.setSite(site),()->mainService.getLemmaService().saveLemma(lemma));
+            mainService.getLemmaService().findLemma(lemma.getLemma()).ifPresentOrElse(l -> l.setSite(site), () -> mainService.getLemmaService().saveLemma(lemma));
 
             mainLogger.info(test.join());
         });
@@ -191,34 +195,28 @@ public class SiteParserRunner implements Runnable {
 
     public void startIndexingSites(boolean isAllSite, @RequestParam Integer siteId) {
         if (isAllSite) {
-            mainService.getSiteService().getAllSites().parallelStream().forEach(this::startSiteIndex);
+            mainService.getSiteService().getAllSites().join().parallelStream().forEach(this::startSiteIndex);
             mainLogger.info("SITE PARSING IS FINISHED!");
         } else {
-            Site findSite = mainService.getSiteService().getSite(siteId);
+            Site findSite = mainService.getSiteService().getSite(siteId).join();
             startSiteIndex(findSite);
         }
     }
 
 
-    public void startSiteParse(Site site) throws IOException {
+    public Link getSiteLinks() throws IOException {
         Link rootLink = new Link(site.getUrl());
-
         mainService.getSiteService().updateSite(site);
         RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, site);
-        siteMapPool.invoke(forkJoinTask);
-        insertToDatabase(rootLink);
+        return siteMapPool.invoke(forkJoinTask);
     }
 
 
-    private void insertToDatabase(Link link) {
+    public void insertToDatabase(Link link) {
         Page root = new Page(link);
-//        root.setSite(link.getSite());
-        Page page = mainService.getPageService().savePage(root).join();
-        page.setSite(site);
-        mainLogger.info(root);
-        synchronized (site) {
-            mainService.getPageService().updatePage(page);
+        synchronized (Site.class) {
+            mainService.getPageService().updatePage(root);
         }
-        link.getChildren().parallelStream().forEach(this::insertToDatabase);
+        link.getChildren().forEach(this::insertToDatabase);
     }
 }

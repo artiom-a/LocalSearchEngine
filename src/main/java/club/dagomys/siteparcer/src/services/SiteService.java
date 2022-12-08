@@ -9,6 +9,7 @@ import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,10 +32,10 @@ public class SiteService {
         return CompletableFuture.completedFuture(siteRepository.save(site));
     }
 
-    @Async
+    @Async("taskExecutor")
     public void updateSite(Site site) {
         siteRepository
-                .findById(site.getId())
+                .findByUrl(site.getUrl())
                 .ifPresentOrElse(s -> {
                     s.setStatus(site.getStatus());
                     s.setUrl(site.getUrl());
@@ -43,31 +44,35 @@ public class SiteService {
                     siteRepository.save(s);
                 }, () -> siteRepository.save(site));
     }
-
-    public Site getSite(String url) {
+    @Async("taskExecutor")
+    @Transactional
+    public CompletableFuture<Site> getSite(String url) {
         Optional<Site> site = siteRepository.findByUrl(url);
-        return site.orElseGet(Site::new);
+        return CompletableFuture.completedFuture(site.orElseGet(Site::new));
     }
 
-    public Site getSite(Integer siteId) {
+    @Async("taskExecutor")
+    @Transactional
+    public CompletableFuture<Site> getSite(Integer siteId) {
         Optional<Site> siteOptional = siteRepository.findById(siteId);
-        return siteOptional.orElse(null);
+        return CompletableFuture.completedFuture(siteOptional.orElse(null));
     }
 
     public Integer getSiteCount() {
         return (int) siteRepository.count();
     }
-
-    public List<Site> getAllSites() {
+    @Async("taskExecutor")
+    public CompletableFuture<List<Site>> getAllSites() {
         List<Site> sites = new ArrayList<>();
         siteRepository.findAll().forEach(sites::add);
-        return sites;
+        return CompletableFuture.completedFuture(sites);
     }
-
+    @Async("taskExecutor")
     public List<Page> findPageBySite(Site site) {
         return pageService.getPagesBySite(site);
     }
 
+    @Async("taskExecutor")
     public void deleteSite(Site site) {
         siteRepository.delete(site);
     }

@@ -17,10 +17,16 @@ class LemmaCounterTest {
     private LemmaCounter englishLemmaCounter;
     private LemmaCounter russianLemmaCounter;
     private LemmaCounter otherLangLemmaCounter;
-    String englishText = "I am sure learning foreign languages is very important nowadays. People start learning a foreign language, because they want to have a better job, a possibility to study abroad or take part in international conferences. People want to have a possibility to get a higher education abroad or even start their career there. The most popular among foreign languages are English, German, Italian, French and Spanish.";
+    String englishText = """
+            I am sure learning foreign languages is very important nowadays. People start learning a foreign language,
+            because they want to have a better job, a possibility to study abroad or take part in international conferences.
+            People want to have a possibility to get a higher education abroad or even start their career there.
+            The most popular among foreign languages are English, German, Italian, French and Spanish.""";
     String russianText = "Повторное появление леопарда в Осетии позволяет предположить, что леопард постоянно обитает в некоторых районах Северного Кавказа.";
-    String french = "Ma ville\n" +
-            "J'habite une belle ville dans le nord de la France. Il y a un quartier très agréable pour aller se balader, lorsqu'il fait beau. Il est possible de faire du vélo dans un parc autour d'une citadelle fortifiée.";
+    String french = """
+            Ma ville J'habite une belle ville dans le nord de la France.
+            Il y a un quartier très agréable pour aller se balader, lorsqu'il fait beau. 
+            Il est possible de faire du vélo dans un parc autour d'une citadelle fortifiée.""";
 
 
     @BeforeEach
@@ -43,14 +49,14 @@ class LemmaCounterTest {
 
     @Test
     @DisplayName("Поиск лемм в англоязычном тексте")
-    void getWordsMap_EnglishLemmas(){
+    void getWordsMap_EnglishLemmas() {
         long englishLemmasCount = englishLemmaCounter.countLemmas().entrySet().size();
         assertEquals(40, englishLemmasCount);
     }
 
     @Test
     @DisplayName("Поиск лемм в тексте с неопределенным языком")
-    void getWordsMap_OtherLangLemmas(){
+    void getWordsMap_OtherLangLemmas() {
         assertNull(otherLangLemmaCounter.countLemmas());
     }
 

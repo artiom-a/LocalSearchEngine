@@ -16,6 +16,4 @@ public interface SearchIndexRepository extends JpaRepository<SearchIndex, Intege
     List<SearchIndex> findByPageOrderByRankDesc(Page page);
     Optional<SearchIndex> findByPageAndLemma(Page page, Lemma lemma);
     List<SearchIndex> findByPage(Page page);
-    @Async
-    public <S extends SearchIndex> S save(S entity);
 }

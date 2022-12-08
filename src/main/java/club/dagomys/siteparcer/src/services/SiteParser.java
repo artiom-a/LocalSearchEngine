@@ -68,6 +68,7 @@ public class SiteParser extends RecursiveTask<Link> {
                     rootURL.setSite(site);
                     if (urlChecker(absolutURL)) {
                         Link child = new Link(absolutURL);
+                        child.setSite(site);
                         rootURL.addChild(child, relativeURL);
                     }
 

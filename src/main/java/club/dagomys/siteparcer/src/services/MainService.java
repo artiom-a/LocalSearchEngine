@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -17,7 +18,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 @Service
-public class MainService extends Thread {
+public class MainService {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
     ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
@@ -158,13 +159,13 @@ public class MainService extends Thread {
     }
 */
 
-
+    @Async("taskExecutor")
     public void startIndexingSites(boolean isAllSite, @RequestParam Integer siteId) {
         if (isAllSite) {
-            siteService.getAllSites().parallelStream().forEach(site -> new SiteParserRunner(site, this).run());
+            siteService.getAllSites().join().parallelStream().forEach(site -> new SiteParserRunner(site, this).run());
             mainLogger.info("SITE PARSING IS FINISHED!");
         } else {
-            Site findSite = siteService.getSite(siteId);
+            Site findSite = siteService.getSite(siteId).join();
             new SiteParserRunner(findSite, this).run();
         }
     }
