@@ -1,6 +1,6 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.lemmatisator.scr.LemmaCounter;
+import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,11 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -21,21 +18,23 @@ import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
-public class SiteParserRunner implements Runnable {
+public class SiteParserRunner extends Thread {
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
     private final ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
     private final Site site;
-    private volatile boolean isStarted = false;
+    private AtomicBoolean isStarted = new AtomicBoolean(false);
 
 
     @Autowired
     private final MainService mainService;
+
+    @Autowired
+    private ExecutorService asyncService;
 
     @Autowired
     public SiteParserRunner(Site site, MainService mainService) {
@@ -44,12 +43,16 @@ public class SiteParserRunner implements Runnable {
     }
 
     private void setStarted(boolean started) {
-        isStarted = started;
+        isStarted = new AtomicBoolean(started);
     }
 
-    public boolean isStarted() {
+    public AtomicBoolean isStarted() {
         return isStarted;
     }
+
+//    public void stop() {
+//        setStarted(false);
+//    }
 
     @Override
     public void run() {
@@ -57,14 +60,16 @@ public class SiteParserRunner implements Runnable {
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(LocalDateTime.now());
         mainService.getSiteService().updateSite(site);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy hh:mm:ss");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
         try {
-
             Link siteLinks = getSiteLinks();
             insertToDatabase(siteLinks);
-            countLemmaFrequency();
+
+            Map<String, Integer> lemmaFrequencyMap = countLemmaFrequency();
+            saveLemmaToDatabase(lemmaFrequencyMap);
+
             createSearchSiteIndexes();
         } catch (Exception ex) {
             mainLogger.error(ex.getMessage());
@@ -97,15 +102,16 @@ public class SiteParserRunner implements Runnable {
             lemmaCounting(indexedPageMap);
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
-//        mainLogger.info(lemmaMap.size());
-        indexedPagesLemmas.forEach((key, value) -> {
+        return indexedPagesLemmas;
+    }
+
+    private void saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
+        lemmaMap.forEach((key, value) -> {
             Lemma lemma = new Lemma(key, value);
             lemma.setSite(this.site);
             mainLogger.info(lemma);
-
             mainService.getLemmaService().saveLemma(lemma);
         });
-        return indexedPagesLemmas;
     }
 
     public Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
@@ -116,9 +122,7 @@ public class SiteParserRunner implements Runnable {
 
                 for (Field field : mainService.getFieldService().getAllFields()) {
                     LemmaCounter lemmaCounter = new LemmaCounter(doc.getElementsByTag(field.getName()).text());
-                    lemmaCounter.countLemmas().forEach((key, value) -> {
-                        lemmas.merge(key, new Lemma(key, value), Lemma::sum);
-                    });
+                    lemmaCounter.countLemmas().forEach((key, value) -> lemmas.merge(key, new Lemma(key, value), Lemma::sum));
                 }
             } catch (IOException e) {
                 System.out.println(e.getMessage());

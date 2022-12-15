@@ -20,12 +20,12 @@ public class AsyncConfig implements AsyncConfigurer {
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
 
     @Bean(name = "taskExecutor")
-    public Executor taskExecutor() {
+    public ThreadPoolTaskExecutor taskExecutor() {
         mainLogger.info("Creating task executor...");
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CORE_COUNT);
-        executor.setQueueCapacity(30);
-        executor.setThreadNamePrefix("SiteParserExecutor-");
+        executor.setMaxPoolSize(CORE_COUNT);
+        executor.setThreadNamePrefix("SiteExecutor-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.initialize();
         return executor;
@@ -46,5 +46,10 @@ public class AsyncConfig implements AsyncConfigurer {
             }
 
         };
+    }
+
+    @Override
+    public ThreadPoolTaskExecutor getAsyncExecutor() {
+        return taskExecutor();
     }
 }

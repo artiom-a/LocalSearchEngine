@@ -40,6 +40,7 @@ private MainService mainService;
 
     @GetMapping(value = {"/", "/index"})
     public String getMainPage(Model model) {
+        model.addAttribute("sites", siteService.getAllSites().join());
         model.addAttribute("pages", pageService.getAllPages());
         return "index";
     }

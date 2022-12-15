@@ -1,20 +1,15 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.lemmatisator.scr.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.repos.SearchIndexRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 

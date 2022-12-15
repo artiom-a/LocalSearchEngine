@@ -63,9 +63,7 @@ public class SiteService {
     }
     @Async("taskExecutor")
     public CompletableFuture<List<Site>> getAllSites() {
-        List<Site> sites = new ArrayList<>();
-        siteRepository.findAll().forEach(sites::add);
-        return CompletableFuture.completedFuture(sites);
+        return CompletableFuture.completedFuture(siteRepository.findAll());
     }
 /*    @Async("taskExecutor")
     public CompletableFuture<List<Page>> findPageBySite(Site site) {
@@ -73,6 +71,7 @@ public class SiteService {
     }*/
 
     @Async("taskExecutor")
+    @Transactional
     public void deleteSite(Site site) {
         siteRepository.delete(site);
     }

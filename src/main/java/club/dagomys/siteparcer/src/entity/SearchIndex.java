@@ -1,6 +1,5 @@
 package club.dagomys.siteparcer.src.entity;
 
-import club.dagomys.siteparcer.src.entity.id.PageId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

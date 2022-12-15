@@ -25,7 +25,6 @@ public class Page implements Serializable {
     private int statusCode;
     @ToString.Exclude
     @Column(columnDefinition = "MEDIUMTEXT")
-    @Type(type = "org.hibernate.type.TextType")
     private String content;
 
     @ManyToOne(cascade=CascadeType.MERGE, fetch = FetchType.EAGER)

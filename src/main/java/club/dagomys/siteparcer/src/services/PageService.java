@@ -56,7 +56,7 @@ public class PageService {
     @Async("taskExecutor")
     @Transactional
     public void updatePage(Page page) {
-        Optional<Page> findPage = pageRepository.findByRelPathAndSite(page.getRelPath(), page.getSite());
+        Optional<Page> findPage = pageRepository.findByRelPathAndSite(page.getRelPath(), page.getSite()).stream().findFirst();
         Optional<Site> findSite = siteRepository.findById(page.getSite().getId());
         if (findPage.isEmpty()) {
             mainLogger.info("saving page " + page);

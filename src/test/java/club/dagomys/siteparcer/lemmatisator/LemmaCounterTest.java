@@ -1,15 +1,13 @@
-package club.dagomys.lemmatisator.test;
-
-import club.dagomys.lemmatisator.scr.LemmaCounter;
+package club.dagomys.siteparcer.lemmatisator;
 
 
+import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 

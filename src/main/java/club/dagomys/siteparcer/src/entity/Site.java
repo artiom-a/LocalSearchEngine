@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -30,12 +32,14 @@ public class Site implements Serializable {
     private String lastError;
     @Transient
     private Link rootLink;
-    @Transient
+    @OneToMany(cascade=CascadeType.MERGE, fetch = FetchType.EAGER, mappedBy = "site")
+    @ToString.Exclude
     private List<Page> pages;
 
     public Site(Link rootLink) {
         this.rootLink = rootLink;
         this.url = rootLink.getValue();
+        this.status = SiteStatus.ADDED;
     }
 
 }

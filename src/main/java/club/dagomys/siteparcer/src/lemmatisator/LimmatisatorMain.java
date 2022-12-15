@@ -1,4 +1,4 @@
-package club.dagomys.lemmatisator.scr;
+package club.dagomys.siteparcer.src.lemmatisator;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;

@@ -14,9 +14,9 @@ import java.util.TreeSet;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Link implements Node, Comparable<Link> {
-    private  String URL;
+    private String URL;
     private String relUrl;
-    private  Set<Link> childSet;
+    private Set<Link> childSet;
     private Link parentLink;
     private int layer;
     private int statusCode;
@@ -29,7 +29,6 @@ public class Link implements Node, Comparable<Link> {
         this.URL = URL.strip();
         childSet = new TreeSet<>();
         statusCode = 0;
-        this.site = new Site();
     }
 
     public int getLayer() {

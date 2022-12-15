@@ -2,9 +2,7 @@ package club.dagomys.siteparcer.src.repos;
 
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.entity.id.PageId;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 

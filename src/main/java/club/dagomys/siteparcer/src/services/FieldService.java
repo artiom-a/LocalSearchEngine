@@ -1,23 +1,16 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.lemmatisator.scr.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.Field;
 import club.dagomys.siteparcer.src.entity.FieldSelector;
-import club.dagomys.siteparcer.src.entity.Lemma;
-import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.repos.FieldRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import java.io.IOException;
 import java.util.*;
 
 @Service
@@ -27,11 +20,7 @@ public class FieldService {
     private Logger mainLogger = LogManager.getLogger(FieldService.class);
 
     public List<Field> getAllFields() {
-        List<Field> fields = new ArrayList<>();
-        for (Field field : fieldRepository.findAll()) {
-            fields.add(field);
-        }
-        return fields;
+        return new ArrayList<>(fieldRepository.findAll());
     }
     @Async("taskExecutor")
     public Field saveField(Field field) {

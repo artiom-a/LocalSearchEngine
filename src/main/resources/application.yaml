@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/search_engine
+    url: jdbc:mysql://v32:3306/search_engine
     username: skillbox_engine
     password: skillbox_engine
   jpa:
     generate-ddl: true
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
   mvc:
     favicon:
       enabled: true
@@ -16,6 +16,14 @@ spring:
   output:
     ansi:
       enabled: ALWAYS
-site:
-  name: "Playback.ru"
-  url: https://www.playback.ru
+sites:
+  site:
+   - name: "Учебный центр"
+     url: https://maxima.school/
+   - name:  "Дом в Сочи"
+     url: https://u-house-sochi.ru
+#   - name: "Удаленный доступ"
+#     url: https://getscreen.ru/
+#   - name: "ФорСайт Компани"
+#     url: https://forsite-company.ru
+

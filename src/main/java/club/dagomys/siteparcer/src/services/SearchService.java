@@ -1,6 +1,6 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.lemmatisator.scr.LemmaCounter;
+import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
@@ -38,9 +38,8 @@ public class SearchService {
 
     private LemmaCounter counter;
 
-    @Async
-    @Transactional
-    public CompletableFuture<List<SearchResponse>> search(SearchRequest searchLine) {
+
+    public List<SearchResponse> search(SearchRequest searchLine) {
         mainLogger.info("Поисковый запрос \t" + searchLine);
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
@@ -66,7 +65,7 @@ public class SearchService {
             mainLogger.info("RESPONSE " + response);
         });
 
-        return CompletableFuture.completedFuture(searchResponses);
+        return searchResponses;
     }
 
     private SearchResponse getResponse(Page page, float relevance, List<Lemma> requestLemmas) {

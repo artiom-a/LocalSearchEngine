@@ -36,14 +36,15 @@ public class IndexingController {
     private SiteService siteService;
 
     @GetMapping(value = {"/startIndexing"})
-    public String startIndexing(Model model, @RequestParam(name="siteId", required=false, defaultValue="0") int siteId) throws ExecutionException, InterruptedException {
-        mainService.startIndexingSites(true, siteId);
+    public String startIndexing(Model model, @RequestParam(name = "siteId", required = false, defaultValue = "0") int siteId) throws ExecutionException, InterruptedException {
+        mainService.startIndexingSites(true, null);
         return "redirect:/sites";
     }
 
     @GetMapping(value = {"/stopIndexing"})
-    public ResponseEntity<Boolean> stopIndexing() {
-        return new ResponseEntity<>(HttpStatus.OK);
+    public String stopIndexing() {
+        mainService.stopIndexingSites();
+        return "redirect:/";
     }
 
 
@@ -78,7 +79,8 @@ public class IndexingController {
 
     @GetMapping("/sites/{id}")
     public String getSite(@PathVariable(value = "id") Integer id) throws ExecutionException, InterruptedException {
-        mainService.startIndexingSites(false, id);
+        Site findSite = siteService.getSite(id).join();
+        mainService.startIndexingSites(false, findSite);
         return "redirect:/sites";
     }
 }
