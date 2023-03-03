@@ -44,14 +44,14 @@ public class SearchService {
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
-        List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma).join();
+        List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
         List<Page> pageIndexes = new ArrayList<>();
         List<SearchResponse> searchResponses = new ArrayList<>();
         indexingList.forEach(indexing -> pageIndexes.add(indexing.getPage()));
 
         for (Lemma lemma : findLemmas) {
             if (!pageIndexes.isEmpty() && lemma != minFreqLemma) {
-                List<SearchIndex> secondIndexSearch = searchIndexService.findIndexByLemma(lemma).join();
+                List<SearchIndex> secondIndexSearch = searchIndexService.findIndexByLemma(lemma);
                 List<Page> tempList = new ArrayList<>();
                 secondIndexSearch.forEach(indexing -> tempList.add(indexing.getPage()));
                 findPages.retainAll(tempList);
@@ -207,7 +207,7 @@ public class SearchService {
             counter = new LemmaCounter(searchLine);
             Map<String, Integer> lemmas = counter.countLemmas();
             lemmas.forEach((key, value) -> {
-                Optional<Lemma> findLemma = lemmaService.findLemma(key).join();
+                Optional<Lemma> findLemma = lemmaService.findLemma(key);
                 findLemma.ifPresentOrElse(findLemmas::add, ArrayList::new);
             });
             deleteCommonLemmas(findLemmas);
@@ -237,7 +237,7 @@ public class SearchService {
         if (lemma == null) {
             mainLogger.info("empty lemma indexed");
         } else {
-            findPages = new ArrayList<>(searchIndexService.findIndexByLemma(lemma).join());
+            findPages = new ArrayList<>(searchIndexService.findIndexByLemma(lemma));
         }
         return findPages.stream().map(SearchIndex::getPage).collect(Collectors.toList());
     }
@@ -247,44 +247,6 @@ public class SearchService {
             return lemmaList.get(0);
         } else
             return lemmaList.stream().min(Comparator.comparing(Lemma::getFrequency)).orElse(null);
-    }
-
-    private int[] prefixFunction(Lemma lemma) {
-        String pattern = lemma.getLemma();
-        int[] values = new int[pattern.length()];
-        for (int i = 1; i < pattern.length(); i++) {
-            int j = 0;
-            while (i + j < pattern.length() && pattern.charAt(j) == pattern.charAt(i + j)) {
-                values[i + j] = Math.max(values[i + j], j + 1);
-                j++;
-            }
-        }
-        return values;
-    }
-
-    private ArrayList<Integer> KMPSearch(String text, Lemma lemma) {
-        String searchLine = lemma.getLemma();
-        ArrayList<Integer> foundIndexes = new ArrayList<>();
-        int[] prefixFunction = prefixFunction(lemma);
-        int i = 0;
-        int j = 0;
-        while (i < text.length()) {
-            if (searchLine.charAt(j) == text.charAt(i)) {
-                j++;
-                i++;
-            }
-            if (j == searchLine.length()) {
-                foundIndexes.add(i - j);
-                j = prefixFunction[j - 1];
-            } else if (i < text.length() && searchLine.charAt(j) != text.charAt(i)) {
-                if (j != 0) {
-                    j = prefixFunction[j - 1];
-                } else {
-                    i = i + 1;
-                }
-            }
-        }
-        return foundIndexes;
     }
 
     private boolean isAbsURL(Page page) {

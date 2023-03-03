@@ -43,22 +43,6 @@ public class APIController {
         return new ResponseEntity<>(lemmaService.getAllLemma(), HttpStatus.OK);
     }
 
-//    @GetMapping("/sites")
-//    public ResponseEntity<List<Site>> getAllSite() {
-//        return new ResponseEntity<List<Site>>(mainService.getSiteService().getAllSites(), HttpStatus.OK);
-//    }
-//
-//    public ResponseEntity<Boolean> indexPage(@RequestParam Page page) {
-//        SiteIndexing indexing = new SiteIndexing(mainService,  page.getSite().getId(), false);
-//        new Thread(()-> {
-//            try {
-//                indexing.run();
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }).start();
-//        return new ResponseEntity<Boolean>(true, HttpStatus.OK);
-//    }
 
     @GetMapping(value = "/statistics", produces = "application/json")
     public @ResponseBody

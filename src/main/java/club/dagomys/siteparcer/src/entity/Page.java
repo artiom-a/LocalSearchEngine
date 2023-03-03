@@ -27,7 +27,7 @@ public class Page implements Serializable {
     @Column(columnDefinition = "MEDIUMTEXT")
     private String content;
 
-    @ManyToOne(cascade=CascadeType.MERGE, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "site_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Site site;
@@ -41,10 +41,4 @@ public class Page implements Serializable {
         this.site = link.getSite();
     }
 
-//    @Override
-//    public int compareTo(@NotNull Page o) {
-//        return Comparator.comparing(Page::getRelPath)
-//                .thenComparing(Page::getContent)
-//                .compare(this, o);
-//    }
 }

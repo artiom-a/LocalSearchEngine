@@ -6,13 +6,9 @@ import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 
 @Service
 public class PageService {
@@ -29,48 +25,25 @@ public class PageService {
         return new ArrayList<>(pageRepository.findAll());
     }
 
-    @Async("taskExecutor")
-    @Transactional
-    public CompletableFuture<Page> savePage(Page page) {
-        CompletableFuture<Page> completableFuture = new CompletableFuture<>();
-        completableFuture.complete(pageRepository.saveAndFlush(page));
-        return completableFuture;
+    public Page savePage(Page page) {
+        return pageRepository.saveAndFlush(page);
     }
 
-
-    /*    @Async("taskExecutor")
-        @Transactional
-        public void updatePage(Page page) {
-            mainLogger.warn(page);
-            pageRepository
-                    .findByRelPathAndSite(page.getRelPath(), page.getSite())
-                    .ifPresentOrElse(p -> {
-                        p.setLink(page.getLink());
-                        p.setSite(page.getSite());
-                        p.setContent(page.getContent());
-                        p.setStatusCode(page.getStatusCode());
-                        p.setRelPath(page.getRelPath());
-                        pageRepository.saveAndFlush(p);
-                    }, () -> pageRepository.saveAndFlush(page));
-        }*/
-    @Async("taskExecutor")
-    @Transactional
-    public void updatePage(Page page) {
+    public Page saveOrUpdate(Page page) {
         Optional<Page> findPage = pageRepository.findByRelPathAndSite(page.getRelPath(), page.getSite()).stream().findFirst();
-        Optional<Site> findSite = siteRepository.findById(page.getSite().getId());
         if (findPage.isEmpty()) {
             mainLogger.info("saving page " + page);
-            page.setSite(findSite.get());
-            pageRepository.saveAndFlush(page);
+            page.setSite(page.getSite());
+            return savePage(page);
         } else {
             Page p = findPage.get();
             p.setLink(page.getLink());
-            p.setSite(findSite.get());
+            p.setSite(page.getSite());
             p.setContent(page.getContent());
             p.setStatusCode(page.getStatusCode());
             p.setRelPath(page.getRelPath());
             mainLogger.info("update page " + p);
-            pageRepository.saveAndFlush(p);
+            return savePage(p);
         }
     }
 
@@ -82,10 +55,8 @@ public class PageService {
         pageRepository.delete(page);
     }
 
-    @Async("taskExecutor")
-    @Transactional
-    public CompletableFuture<List<Page>> getPagesBySite(Site site) {
-        return CompletableFuture.completedFuture(pageRepository.getPageBySite(site).orElse(null));
+    public List<Page> getPagesBySite(Site site) {
+        return pageRepository.getPageBySite(site).get();
     }
 
     public Page getByRelPathAndSite(String path, Site site) {

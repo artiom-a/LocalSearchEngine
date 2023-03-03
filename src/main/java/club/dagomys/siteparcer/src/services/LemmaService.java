@@ -1,34 +1,22 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
-import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.repos.LemmaRepository;
 import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @Service
-@Transactional
 public class LemmaService {
     private final Logger mainLogger = LogManager.getLogger(LemmaService.class);
 
     @Autowired
     private LemmaRepository lemmaRepository;
-
-    @Autowired
-    private PageService pageService;
-
-    @Autowired
-    private FieldService fieldService;
 
     @Autowired
     private SiteRepository siteRepository;
@@ -41,30 +29,23 @@ public class LemmaService {
         lemmaRepository.saveAll(lemmaList);
     }
 
-    @Async("taskExecutor")
-    @Transactional
-    public CompletableFuture<Lemma> saveLemma(Lemma lemma) {
-        CompletableFuture<Lemma> completableFuture = new CompletableFuture<>();
-        completableFuture.complete(lemmaRepository.saveAndFlush(lemma));
-        return completableFuture;
+    public Lemma saveLemma(Lemma lemma) {
+        return lemmaRepository.saveAndFlush(lemma);
     }
 
-    @Async("taskExecutor")
-    @Transactional
-    public void update(Lemma lemma) {
-        Optional<Lemma> findLemma = lemmaRepository.findByLemmaAndSite(lemma.getLemma(), lemma.getSite());
-        Optional<Site> findSite = siteRepository.findById(lemma.getSite().getId());
+    public Lemma saveOrUpdate(Lemma lemma, Site site) {
+        Optional<Lemma> findLemma = findLemmaFromDB(lemma.getLemma(), lemma.getSite());
         if (findLemma.isEmpty()) {
-            mainLogger.info("saving page " + lemma);
-            lemma.setSite(findSite.get());
-            lemmaRepository.saveAndFlush(lemma);
+            mainLogger.info("saving lemma " + lemma);
+            lemma.setSite(site);
+            return saveLemma(lemma);
         } else {
             Lemma l = findLemma.get();
             l.setLemma(lemma.getLemma());
             l.setFrequency(lemma.getFrequency());
-            l.setSite(lemma.getSite());
+            l.setSite(site);
             mainLogger.info("update page " + l);
-            lemmaRepository.saveAndFlush(l);
+            return saveLemma(l);
         }
     }
 
@@ -79,22 +60,20 @@ public class LemmaService {
     public void deleteAllLemma() {
         lemmaRepository.deleteAll();
     }
-    @Async("taskExecutor")
-    @Transactional
-    public CompletableFuture<Optional<Lemma>> findLemma(String lemma) {
-        CompletableFuture<Optional<Lemma>> completableFuture = new CompletableFuture<>();
-        completableFuture.complete(lemmaRepository.findAll().parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst());
-        return completableFuture;
+
+    public Optional<Lemma> findLemma(String lemma) {
+        return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
 
-    @Async("taskExecutor")
-    @Transactional
-    public void deleteAllBySite(Site site){
+    public Optional<Lemma> findLemmaFromDB(String lemma, Site site) {
+        return lemmaRepository.findFirstByLemmaAndSite(lemma, site);
+//        return lemmaRepository.findAll().parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
+    }
+
+
+    public void deleteAllBySite(Site site) {
         lemmaRepository.deleteAllBySite(site);
     }
 
-//    public CompletableFuture<Optional<Lemma>> asyncLemmaFind(String lemma) {
-//        return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
-//    }
 
 }

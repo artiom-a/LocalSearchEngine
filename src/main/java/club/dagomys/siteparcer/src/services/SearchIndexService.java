@@ -20,22 +20,14 @@ public class SearchIndexService {
     @Autowired
     private SearchIndexRepository searchIndexRepository;
 
-    @Autowired
-    private LemmaService lemmaService;
 
-    @Autowired
-    private FieldService fieldService;
-
-    @Autowired
-    private PageService pageService;
-
-    @Autowired
-    private SiteService siteService;
-
-    @Async("taskExecutor")
-    @Transactional
+    @Async
     public CompletableFuture<SearchIndex> saveIndex(SearchIndex searchIndex) {
-        return CompletableFuture.completedFuture(searchIndexRepository.save(searchIndex));
+        return CompletableFuture.completedFuture(searchIndexRepository.saveAndFlush(searchIndex));
+    }
+
+    public void saveAllIndexes(List<SearchIndex> indexes) {
+        searchIndexRepository.saveAll(indexes);
     }
 
     public List<SearchIndex> getAllIndexes() {
@@ -44,19 +36,15 @@ public class SearchIndexService {
         return indexList;
     }
 
-
-    @Async("taskExecutor")
-    @Transactional
-    public CompletableFuture<List<SearchIndex>> findIndexByLemma(Lemma lemma) {
-        return CompletableFuture.completedFuture(searchIndexRepository.findByLemmaOrderByRankDesc(lemma));
+    public List<SearchIndex> findIndexByLemma(Lemma lemma) {
+        return searchIndexRepository.findByLemmaOrderByRankDesc(lemma);
     }
 
     public List<SearchIndex> findIndexByPage(Page page) {
         return searchIndexRepository.findByPage(page);
     }
 
-    @Async("taskExecutor")
-    @Transactional
+
     public SearchIndex findIndexByPageAndLemma(Page page, Lemma lemma) throws Throwable {
         return searchIndexRepository.findByPageAndLemma(page, lemma).orElseThrow(() ->
                 new EntityNotFoundException("SearchIndex object is not found " + page.getRelPath() + "\t" + lemma.getLemma()));

@@ -6,7 +6,7 @@ spring:
   jpa:
     generate-ddl: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
   mvc:
     favicon:
       enabled: true
@@ -16,14 +16,20 @@ spring:
   output:
     ansi:
       enabled: ALWAYS
-sites:
+app-configuration:
   site:
-   - name: "Учебный центр"
-     url: https://maxima.school/
-   - name:  "Дом в Сочи"
-     url: https://u-house-sochi.ru
-#   - name: "Удаленный доступ"
-#     url: https://getscreen.ru/
-#   - name: "ФорСайт Компани"
-#     url: https://forsite-company.ru
+#    - name: "Учебный центр"
+#      url: https://maxima.school/
+    - name: "Дом в Сочи"
+      url: https://u-house-sochi.ru
+    - name: "Одисей"
+      url: https://spaodissey.ru/
+    - name: "Погода Яндекс"
+      url: https://yandex.ru/pogoda
+    - name: "Disk Яндекс"
+      url: https://disk.yandex.ru/
+    - name: "Яндекс Доставка"
+      url: https://dostavka.yandex.ru
+
+
 

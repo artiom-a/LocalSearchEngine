@@ -1,7 +1,5 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.siteparcer.src.config.AppConfig;
-import club.dagomys.siteparcer.src.config.AsyncConfig;
 import club.dagomys.siteparcer.src.entity.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,11 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 
 @Service
 public class MainService {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
+    private final List<SiteParserRunner> siteParserRunnerList = new ArrayList<>();
 
 
     @Autowired
@@ -34,33 +35,38 @@ public class MainService {
     @Autowired
     private PageService pageService;
 
-    @Autowired
-    private AppConfig appConfig;
 
-//    @Async("taskExecutor")
     public void startIndexingSites(boolean isAllSite, Site site) {
         if (isAllSite) {
 
-            siteService.getAllSites().join().parallelStream().forEach(s ->{
-                SiteParserRunner parser = new SiteParserRunner(s, this);
-                    parser.run();
+            siteService.getAllSites().parallelStream().forEach(s -> {
+                if (s.getStatus() != SiteStatus.INDEXING) {
+
+                    new SiteParserRunner(s, this).run();
+//                    Thread t = new Thread(new SiteParserRunner(s, this));
+//                    t.setName(s.getId()+"- Thread");
+//                    t.start();
+                } else {
+                    mainLogger.error(s.getUrl() + " is indexing");
+                }
             });
-            mainLogger.info("SITE PARSING IS FINISHED!");
         } else {
             SiteParserRunner parser = new SiteParserRunner(site, this);
-            if (parser.isStarted().get()){
+            if (site.getStatus() == SiteStatus.INDEXING) {
                 mainLogger.info("parser is running...");
             } else {
                 parser.run();
             }
         }
+        mainLogger.info("SITE PARSING IS FINISHED!");
     }
 
     public void stopIndexingSites() {
+        siteParserRunnerList.forEach(SiteParserRunner::doStop);
         try {
 //            asyncConfig.getAsyncExecutor().getThreadPoolExecutor().shutdownNow();
 
-        } catch (Exception interruptedException){
+        } catch (Exception interruptedException) {
             mainLogger.warn("App is stopped! " + interruptedException.getMessage());
         }
     }

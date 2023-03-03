@@ -36,7 +36,7 @@ public class IndexingController {
     private SiteService siteService;
 
     @GetMapping(value = {"/startIndexing"})
-    public String startIndexing(Model model, @RequestParam(name = "siteId", required = false, defaultValue = "0") int siteId) throws ExecutionException, InterruptedException {
+    public String startIndexing(Model model) throws ExecutionException, InterruptedException {
         mainService.startIndexingSites(true, null);
         return "redirect:/sites";
     }
@@ -62,7 +62,7 @@ public class IndexingController {
             if (!newSite.getUrl().endsWith("/")) {
                 newSite.setUrl(newSite.getUrl().concat("/"));
             }
-            siteService.updateSite(newSite);
+            siteService.saveSite(newSite);
             return "redirect:/sites";
         } else {
             mainLogger.info(errors.getAllErrors());
@@ -72,14 +72,14 @@ public class IndexingController {
 
     @DeleteMapping(value = "/sites/{id}")
     public String deleteSite(@PathVariable("id") int id) {
-        Site findSite = siteService.getSite(id).join();
+        Site findSite = siteService.getSite(id);
         siteService.deleteSite(findSite);
         return "redirect:/sites";
     }
 
     @GetMapping("/sites/{id}")
     public String getSite(@PathVariable(value = "id") Integer id) throws ExecutionException, InterruptedException {
-        Site findSite = siteService.getSite(id).join();
+        Site findSite = siteService.getSite(id);
         mainService.startIndexingSites(false, findSite);
         return "redirect:/sites";
     }

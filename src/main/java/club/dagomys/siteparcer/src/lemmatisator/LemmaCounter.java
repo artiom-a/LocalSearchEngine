@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,8 +50,8 @@ public class LemmaCounter {
                 .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph)).toList();
         wordsMap = morphList.stream()
                 .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
-                .collect(Collectors.toMap(l -> l.get(0), v -> 1, Integer::sum));
-        wordsMap.keySet().removeIf(l -> l.matches("\\b([A-z]{1,2})\\b")); //remove short 1 till 2 chars symbols
+                .collect(Collectors.toMap(l -> l.get(0).replace('ё','е'), v -> 1, Integer::sum));
+        wordsMap.keySet().removeIf(l -> l.matches("\\b([A-z]{1,2})\\b") || l.matches("\\b([А-яё]{1,2})\\b"));//remove short 1 till 2 chars symbols
         return wordsMap;
     }
 
@@ -65,9 +67,9 @@ public class LemmaCounter {
                         .map(w -> Objects.equals(getLanguage(w), "RU") ? russianMorphology.getNormalForms(w) : englishMorphology.getNormalForms(w))
                         .flatMap(Collection::stream).toList();
                 for (Lemma requestLemma : lemmaList) {
-                        if (lemmas.contains(requestLemma.getLemma())) {
-                            listOfIndexes.add(index);
-                        }
+                    if (lemmas.contains(requestLemma.getLemma())) {
+                        listOfIndexes.add(index);
+                    }
                 }
             }
             index += splitWord.length() + 1;
