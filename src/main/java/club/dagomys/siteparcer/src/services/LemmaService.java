@@ -33,8 +33,11 @@ public class LemmaService {
         return lemmaRepository.saveAndFlush(lemma);
     }
 
+    //доработать метод. Замедляет выполнение при обновлении лемм
     public Lemma saveOrUpdate(Lemma lemma, Site site) {
-        Optional<Lemma> findLemma = findLemmaFromDB(lemma.getLemma(), lemma.getSite());
+        Optional<List<Lemma>> siteLemma = lemmaRepository.getLemmaBySite(site);
+        Optional<Lemma> findLemma = siteLemma.get().parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(lemma.getLemma())).findFirst();
+//        Optional<Lemma> findLemma = findLemmaFromDB(lemma.getLemma(), site);
         if (findLemma.isEmpty()) {
             mainLogger.info("saving lemma " + lemma);
             lemma.setSite(site);
@@ -66,10 +69,12 @@ public class LemmaService {
     }
 
     public Optional<Lemma> findLemmaFromDB(String lemma, Site site) {
-        return lemmaRepository.findFirstByLemmaAndSite(lemma, site);
-//        return lemmaRepository.findAll().parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
+        return lemmaRepository.findByLemmaAndSite(lemma, site);
     }
 
+    public Optional<List<Lemma>> getLemmaList(Site site) {
+        return lemmaRepository.getLemmaBySite(site);
+    }
 
     public void deleteAllBySite(Site site) {
         lemmaRepository.deleteAllBySite(site);

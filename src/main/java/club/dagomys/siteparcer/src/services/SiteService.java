@@ -29,7 +29,8 @@ public class SiteService {
         siteRepository
                 .findByUrl(site.getUrl())
                 .ifPresentOrElse(s -> {
-//                    s.setStatus(site.getStatus());
+                    s.setName(site.getName());
+                    s.setStatus(site.getStatus());
                     s.setUrl(site.getUrl());
                     s.setStatusTime(site.getStatusTime());
                     s.setRootLink(site.getRootLink());

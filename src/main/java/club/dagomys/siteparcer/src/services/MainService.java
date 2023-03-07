@@ -4,12 +4,11 @@ import club.dagomys.siteparcer.src.entity.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
 
 @Service
 public class MainService {
@@ -35,17 +34,15 @@ public class MainService {
     @Autowired
     private PageService pageService;
 
+    @Autowired
+    private ThreadPoolTaskExecutor asyncService;
+
 
     public void startIndexingSites(boolean isAllSite, Site site) {
         if (isAllSite) {
-
-            siteService.getAllSites().parallelStream().forEach(s -> {
+            siteService.getAllSites().forEach(s -> {
                 if (s.getStatus() != SiteStatus.INDEXING) {
-
-                    new SiteParserRunner(s, this).run();
-//                    Thread t = new Thread(new SiteParserRunner(s, this));
-//                    t.setName(s.getId()+"- Thread");
-//                    t.start();
+                    asyncService.getThreadPoolExecutor().execute(new SiteParserRunner(s, this));
                 } else {
                     mainLogger.error(s.getUrl() + " is indexing");
                 }
@@ -53,9 +50,9 @@ public class MainService {
         } else {
             SiteParserRunner parser = new SiteParserRunner(site, this);
             if (site.getStatus() == SiteStatus.INDEXING) {
-                mainLogger.info("parser is running...");
+                mainLogger.info(site.getUrl() + " status is " + site.getStatus());
             } else {
-                parser.run();
+                asyncService.getThreadPoolExecutor().execute(parser);
             }
         }
         mainLogger.info("SITE PARSING IS FINISHED!");
@@ -64,7 +61,7 @@ public class MainService {
     public void stopIndexingSites() {
         siteParserRunnerList.forEach(SiteParserRunner::doStop);
         try {
-//            asyncConfig.getAsyncExecutor().getThreadPoolExecutor().shutdownNow();
+            asyncService.getThreadPoolExecutor().shutdownNow();
 
         } catch (Exception interruptedException) {
             mainLogger.warn("App is stopped! " + interruptedException.getMessage());

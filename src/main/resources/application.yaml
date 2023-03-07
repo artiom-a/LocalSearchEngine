@@ -6,7 +6,7 @@ spring:
   jpa:
     generate-ddl: true
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
   mvc:
     favicon:
       enabled: true
@@ -18,18 +18,20 @@ spring:
       enabled: ALWAYS
 app-configuration:
   site:
-#    - name: "Учебный центр"
-#      url: https://maxima.school/
-    - name: "Дом в Сочи"
+    - name: ""
+      url: https://maxima.school/
+    - name: ""                      # if name is EMPTY AppConfig get title from main page
       url: https://u-house-sochi.ru
-    - name: "Одисей"
+    - name: ""
       url: https://spaodissey.ru/
-    - name: "Погода Яндекс"
+    - name: ""
       url: https://yandex.ru/pogoda
-    - name: "Disk Яндекс"
+    - name: ""
       url: https://disk.yandex.ru/
-    - name: "Яндекс Доставка"
+    - name: ""
       url: https://dostavka.yandex.ru
+    - name: ""
+      url: https://www.svetlovka.ru/
 
 
 

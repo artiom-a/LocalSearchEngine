@@ -9,17 +9,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,7 +53,7 @@ public class SiteParserRunner implements Runnable {
         setStarted(true);
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(LocalDateTime.now());
-        mainService.getSiteService().saveOrUpdate(site);
+        mainService.getSiteService().saveOrUpdate(this.site);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
@@ -69,8 +65,8 @@ public class SiteParserRunner implements Runnable {
 
             createSearchSiteIndexes();
         } catch (Exception ex) {
-            mainLogger.error(ex);
-//            mainLogger.error(ex.getMessage());
+//            mainLogger.error(ex);
+            mainLogger.error(ex.getMessage());
         }
 
         Calendar finishDate = Calendar.getInstance();
@@ -79,14 +75,14 @@ public class SiteParserRunner implements Runnable {
         mainLogger.info("Duration " + duration.toString());
         site.setStatusTime(LocalDateTime.now());
         site.setStatus(SiteStatus.INDEXED);
-        mainService.getSiteService().saveOrUpdate(site);
+        mainService.getSiteService().saveOrUpdate(this.site);
         setStarted(false);
     }
 
 
-    private ConcurrentMap<String, Integer> countLemmaFrequency() {
-        ConcurrentMap<String, Integer> indexedPagesLemmas = new ConcurrentHashMap<>();
-        for (Page page : mainService.getPageService().getPagesBySite(site)) {
+    private Map<String, Integer> countLemmaFrequency() {
+        Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
+        for (Page page : mainService.getPageService().getPagesBySite(this.site)) {
             mainLogger.info("Start parsing \t" + page.getRelPath());
             Map<String, Lemma> indexedPageMap = countLemmasOnPage(page);
             indexedPageMap.forEach((key, value) -> {
@@ -105,12 +101,12 @@ public class SiteParserRunner implements Runnable {
     private void saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
         lemmaMap.forEach((key, value) -> {
             Lemma lemma = new Lemma(key, value);
-            mainService.getLemmaService().saveOrUpdate(lemma, this.site);
+            mainService.getLemmaService().saveOrUpdate(lemma, site);
         });
     }
 
-    public ConcurrentMap<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
-        ConcurrentMap<String, Lemma> lemmas = new ConcurrentHashMap<>();
+    public Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
+        Map<String, Lemma> lemmas = new TreeMap<>();
         if (indexingPage.getContent() != null) {
             Document doc = Jsoup.parse(indexingPage.getContent());
             try {
@@ -131,7 +127,7 @@ public class SiteParserRunner implements Runnable {
 
 
     private void lemmaCounting(Map<String, Lemma> inputMap) {
-        ConcurrentMap<String, Lemma> lemmaMap = new ConcurrentHashMap<>();
+        Map<String, Lemma> lemmaMap = new TreeMap<>();
         inputMap.forEach((key, value) -> {
             if (lemmaMap.containsKey(key)) {
                 lemmaMap.put(key, new Lemma(key, lemmaMap.get(key).getFrequency() + value.getFrequency()));
@@ -141,9 +137,9 @@ public class SiteParserRunner implements Runnable {
         });
     }
 
-    private ConcurrentMap<String, Float> startIndexingLemmasOnPage(@NotNull Page indexingPage) {
+    private Map<String, Float> startIndexingLemmasOnPage(@NotNull Page indexingPage) {
 
-        ConcurrentMap<String, Float> lemmas = new ConcurrentHashMap<>();
+        Map<String, Float> lemmas = new TreeMap<>();
 
         Field title = mainService.getFieldService().getFieldByName(FieldSelector.TITLE);
         Field body = mainService.getFieldService().getFieldByName(FieldSelector.BODY);
@@ -176,12 +172,13 @@ public class SiteParserRunner implements Runnable {
     }
 
     private void createSearchSiteIndexes() {
-        for (Page page : mainService.getPageService().getPagesBySite(site)) {
+        List<Lemma> lemmas = mainService.getLemmaService().getLemmaList(site).orElseThrow();
+        for (Page page : mainService.getPageService().getPagesBySite(this.site)) {
             long startTime = System.currentTimeMillis();
-            mainLogger.info("Start parsing \t" + site.getUrl() + "" + page.getRelPath());
-            ConcurrentMap<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
+            mainLogger.info("Start parsing \t" + this.site.getUrl() + "" + page.getRelPath());
+            Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
             indexedPageMap.forEach((key, value) -> {
-                Lemma findLemma = mainService.getLemmaService().findLemmaFromDB(key, this.site).get();
+                Lemma findLemma = lemmas.parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseGet(Lemma::new);
                 mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
             });
             long endTime = System.currentTimeMillis();
@@ -192,9 +189,9 @@ public class SiteParserRunner implements Runnable {
 
 
     public Link getSiteLinks() throws IOException {
-        Link rootLink = new Link(site.getUrl());
-        mainService.getSiteService().saveSite(site);
-        RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, site);
+        Link rootLink = new Link(this.site.getUrl());
+        mainService.getSiteService().saveSite(this.site);
+        RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, this.site);
         return siteMapPool.invoke(forkJoinTask);
     }
 
