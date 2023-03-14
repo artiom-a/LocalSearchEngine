@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @Configuration
 @ConfigurationProperties("app-configuration")
@@ -23,21 +24,26 @@ public class AppConfig {
     public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
         return (String[] args) -> {
             site.forEach(site1 -> {
-                if(site1.getName().isEmpty()){
-                    try {
-                        Document siteFile = Jsoup
-                                .connect(site1.getUrl())
-                                .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                                .referrer("http://www.google.com")
-                                .ignoreHttpErrors(true)
-                                .get();
-                        site1.setName(siteFile.title());
-                        siteService.saveOrUpdate(site1);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                Optional<Site> findSite = siteService.getSite(site1.getUrl());
+                if (findSite.isEmpty()) {
+                    if (site1.getName().isEmpty()) {
+                        try {
+                            Document siteFile = Jsoup
+                                    .connect(site1.getUrl())
+                                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                                    .referrer("http://www.google.com")
+                                    .ignoreHttpErrors(true)
+                                    .get();
+                            site1.setName(siteFile.title());
+                            siteService.saveOrUpdate(site1);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        siteService.saveSite(site1);
                     }
                 } else {
-                    siteService.saveOrUpdate(site1);
+                    siteService.saveOrUpdate(findSite.get());
                 }
             });
         };

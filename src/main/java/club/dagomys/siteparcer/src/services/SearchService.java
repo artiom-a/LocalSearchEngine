@@ -1,5 +1,7 @@
 package club.dagomys.siteparcer.src.services;
 
+import club.dagomys.siteparcer.src.entity.Site;
+import club.dagomys.siteparcer.src.entity.response.SearchData;
 import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
@@ -39,14 +41,14 @@ public class SearchService {
     private LemmaCounter counter;
 
 
-    public List<SearchResponse> search(SearchRequest searchLine) {
+    public SearchResponse search(SearchRequest searchLine) {
         mainLogger.info("Поисковый запрос \t" + searchLine);
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
         List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
         List<Page> pageIndexes = new ArrayList<>();
-        List<SearchResponse> searchResponses = new ArrayList<>();
+        SearchResponse response = new SearchResponse();
         indexingList.forEach(indexing -> pageIndexes.add(indexing.getPage()));
 
         for (Lemma lemma : findLemmas) {
@@ -59,17 +61,25 @@ public class SearchService {
         }
 
         Map<Page, Float> pagesForRelevance = getRelRelevance(findPages, findLemmas);
-        pagesForRelevance.forEach((page, relevance) -> {
-            SearchResponse response = getResponse(page, relevance, findLemmas);
-            searchResponses.add(response);
+        if(pagesForRelevance.isEmpty()){
+            response.setResult(false);
+            return response;
+        } else {
+            List<SearchData> data = new ArrayList<>();
+            response.setResult(true);
+            response.setCount(pagesForRelevance.size());
+            pagesForRelevance.forEach((page, relevance) -> {
+                data.add(getResponse(page.getSite(), page, relevance, findLemmas));
+            });
+            response.setSearchData(data);
             mainLogger.info("RESPONSE " + response);
-        });
+        }
 
-        return searchResponses;
+        return response;
     }
 
-    private SearchResponse getResponse(Page page, float relevance, List<Lemma> requestLemmas) {
-        return new SearchResponse(getAbsLink(page), getTitle(page), getSnippet(page, requestLemmas), relevance);
+    private SearchData getResponse(Site site, Page page, float relevance, List<Lemma> requestLemmas) {
+        return new SearchData(site.getUrl(), site.getName(),getAbsLink(page), getTitle(page), getSnippet(page, requestLemmas), relevance);
     }
 
     private String getTitle(Page page) {

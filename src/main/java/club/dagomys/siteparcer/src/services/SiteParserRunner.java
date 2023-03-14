@@ -26,7 +26,7 @@ public class SiteParserRunner implements Runnable {
     private final ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
     private final Site site;
     private AtomicBoolean isStarted = new AtomicBoolean(false);
-    private boolean doStop = false;
+    private volatile boolean doStop = false;
 
     @Autowired
     private final MainService mainService;
@@ -39,34 +39,28 @@ public class SiteParserRunner implements Runnable {
         this.site = site;
     }
 
-    private void setStarted(boolean started) {
-        isStarted = new AtomicBoolean(started);
-    }
-
-    public AtomicBoolean isStarted() {
-        return isStarted;
-    }
-
 
     @Override
     public void run() {
-        setStarted(true);
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(LocalDateTime.now());
         mainService.getSiteService().saveOrUpdate(this.site);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
-        try {
-            Link siteLinks = getSiteLinks();
-            insertToDatabase(siteLinks);
-            Map<String, Integer> lemmaFrequencyMap = countLemmaFrequency();
-            saveLemmaToDatabase(lemmaFrequencyMap);
+        while (isRunning()) {
+            try {
+                Link siteLinks = getSiteLinks();
+                insertToDatabase(siteLinks);
+                Map<String, Integer> lemmaFrequencyMap = countLemmaFrequency();
+                saveLemmaToDatabase(lemmaFrequencyMap);
 
-            createSearchSiteIndexes();
-        } catch (Exception ex) {
+                createSearchSiteIndexes();
+            } catch (Exception ex) {
 //            mainLogger.error(ex);
-            mainLogger.error(ex.getMessage());
+                mainLogger.error(ex.getMessage());
+            }
+            doStop();
         }
 
         Calendar finishDate = Calendar.getInstance();
@@ -76,7 +70,6 @@ public class SiteParserRunner implements Runnable {
         site.setStatusTime(LocalDateTime.now());
         site.setStatus(SiteStatus.INDEXED);
         mainService.getSiteService().saveOrUpdate(this.site);
-        setStarted(false);
     }
 
 
@@ -98,11 +91,15 @@ public class SiteParserRunner implements Runnable {
         return indexedPagesLemmas;
     }
 
-    private void saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
+    private Iterable<Lemma> saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
+        Set<Lemma> lemmaList = new TreeSet<>();
         lemmaMap.forEach((key, value) -> {
             Lemma lemma = new Lemma(key, value);
-            mainService.getLemmaService().saveOrUpdate(lemma, site);
+            lemma.setSite(site);
+            lemmaList.add(lemma);
         });
+        mainService.getLemmaService().deleteAllBySite(site);
+        return mainService.getLemmaService().saveAllLemmas(lemmaList);
     }
 
     public Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
@@ -206,7 +203,7 @@ public class SiteParserRunner implements Runnable {
         this.doStop = true;
     }
 
-    private synchronized boolean keepRunning() {
+    private synchronized boolean isRunning() {
         return !this.doStop;
     }
 }

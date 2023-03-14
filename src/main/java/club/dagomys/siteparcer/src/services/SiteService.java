@@ -34,13 +34,14 @@ public class SiteService {
                     s.setUrl(site.getUrl());
                     s.setStatusTime(site.getStatusTime());
                     s.setRootLink(site.getRootLink());
+                    s.setLastError(site.getLastError());
                     saveSite(s);
                 }, () -> saveSite(site));
     }
 
-    public Site getSite(String url) {
-        Optional<Site> site = siteRepository.findByUrl(url);
-        return site.orElseGet(Site::new);
+
+    public Optional<Site> getSite(String url) {
+        return siteRepository.findByUrl(url);
     }
 
     public Site getSite(Integer siteId) {

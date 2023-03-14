@@ -21,7 +21,7 @@ import java.util.List;
 @Controller
 public class SearchController {
     private Logger mainLogger = LogManager.getLogger(SearchController.class);
-    private List<SearchResponse> searchResponses = new ArrayList<>();
+    private SearchResponse searchResponse = new SearchResponse();
 
 
     @Autowired
@@ -29,19 +29,20 @@ public class SearchController {
 
     @GetMapping("/search")
     public String getSearchPage(Model model, @ModelAttribute("searchRequest") SearchRequest searchRequest) {
-        model.addAttribute("indexList", searchResponses);
+        model.addAttribute("indexList", searchResponse);
         return "search";
     }
 
     @GetMapping("/statistics")
     public ResponseEntity<Object> getStatistics(){
-        return ResponseEntity.ok (searchResponses);
+        return ResponseEntity.ok (searchResponse);
     }
 
     @PostMapping("/search")
     public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model) {
         if (!errors.hasErrors()) {
-            searchResponses = searchService.search(searchRequest);
+//            searchResponses = searchService.search(searchRequest);
+            searchResponse = searchService.search(searchRequest);
             return "redirect:/search";
         } else {
             mainLogger.info(errors.getAllErrors());

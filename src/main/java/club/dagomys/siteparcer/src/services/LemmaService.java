@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -34,20 +35,16 @@ public class LemmaService {
     }
 
     //доработать метод. Замедляет выполнение при обновлении лемм
-    public Lemma saveOrUpdate(Lemma lemma, Site site) {
-        Optional<List<Lemma>> siteLemma = lemmaRepository.getLemmaBySite(site);
-        Optional<Lemma> findLemma = siteLemma.get().parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(lemma.getLemma())).findFirst();
-//        Optional<Lemma> findLemma = findLemmaFromDB(lemma.getLemma(), site);
+    public Lemma saveOrUpdate(Lemma lemma) {
+        Optional<Lemma> findLemma = lemmaRepository.findByLemmaAndSite(lemma.getLemma(), lemma.getSite());
         if (findLemma.isEmpty()) {
             mainLogger.info("saving lemma " + lemma);
-            lemma.setSite(site);
             return saveLemma(lemma);
         } else {
             Lemma l = findLemma.get();
             l.setLemma(lemma.getLemma());
             l.setFrequency(lemma.getFrequency());
-            l.setSite(site);
-            mainLogger.info("update page " + l);
+            mainLogger.info("update lemma " + l);
             return saveLemma(l);
         }
     }
@@ -68,16 +65,12 @@ public class LemmaService {
         return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
 
-    public Optional<Lemma> findLemmaFromDB(String lemma, Site site) {
-        return lemmaRepository.findByLemmaAndSite(lemma, site);
-    }
-
     public Optional<List<Lemma>> getLemmaList(Site site) {
         return lemmaRepository.getLemmaBySite(site);
     }
 
     public void deleteAllBySite(Site site) {
-        lemmaRepository.deleteAllBySite(site);
+        lemmaRepository.deleteLemmaBySite(site);
     }
 
 

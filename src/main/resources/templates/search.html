@@ -27,7 +27,7 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="index, stat: ${indexList}">
+            <tr th:each="index, stat: ${indexList.searchData}">
                 <td th:text="${stat.index + 1}"></td>
 <!--                <td th:text="${index.id}"></td>-->
                 <td th:text="${index.title}"></td>

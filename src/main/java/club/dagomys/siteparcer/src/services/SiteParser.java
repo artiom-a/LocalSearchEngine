@@ -2,6 +2,7 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.Site;
+import club.dagomys.siteparcer.src.exception.SiteErrorException;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,39 +51,36 @@ public class SiteParser extends RecursiveTask<Link> {
                     .connect(rootURL.getValue())
                     .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                     .referrer("http://www.google.com")
-                    .ignoreHttpErrors(true)
+                    .ignoreHttpErrors(false)
                     .get();
             Elements siteElements = siteFile.select("a[href]");
-            if (siteElements.isEmpty()) {
-                mainLogger.info("Site element is null");
-                return null;
-            } else {
-                int status = siteFile.connection().response().statusCode();
-                siteElements.forEach(link -> {
-                    String absolutURL = link.absUrl("href");
-                    String relativeURL = link.attr("href");
+            int status = siteFile.connection().response().statusCode();
+            siteElements.forEach(link -> {
+                String absolutURL = link.absUrl("href");
+                String relativeURL = link.attr("href");
 
-                    rootURL.setHtml(siteFile.outerHtml());
-                    rootURL.setStatusCode(status);
-                    rootURL.setSite(site);
-                    if (urlChecker(absolutURL)) {
-                        Link child = new Link(absolutURL);
-                        child.setSite(site);
-                        rootURL.addChild(child, relativeURL);
-                    }
+                rootURL.setHtml(siteFile.outerHtml());
+                rootURL.setStatusCode(status);
+                rootURL.setSite(site);
+                if (urlChecker(absolutURL)) {
+                    Link child = new Link(absolutURL);
+                    child.setSite(site);
+                    rootURL.addChild(child, relativeURL);
+                }
 
-                });
-                for (Link child : rootURL.getChildren()) {
-                    SiteParser childParser = new SiteParser(child, mainService, site);
-                    childParser.fork();
-                    childParserList.add(childParser);
-                }
-                for (SiteParser childTask : childParserList) {
-                    mainLogger.info("\t\t" + childTask.compute());
-                    childList.add(childTask.join());
-                }
+            });
+            for (Link child : rootURL.getChildren()) {
+                SiteParser childParser = new SiteParser(child, mainService, site);
+                childParser.fork();
+                childParserList.add(childParser);
+            }
+            for (SiteParser childTask : childParserList) {
+                mainLogger.info("\t\t" + childTask.compute());
+                childList.add(childTask.join());
             }
         } catch (IOException | InterruptedException e) {
+            this.site.setLastError(e.getMessage());
+            mainService.getSiteService().saveOrUpdate(site);
             mainLogger.error(e.getMessage());
         }
         return rootURL;
