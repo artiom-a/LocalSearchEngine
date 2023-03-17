@@ -1,5 +1,6 @@
 package club.dagomys.siteparcer.src.controllers;
 
+import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
 import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 import club.dagomys.siteparcer.src.services.SearchService;
@@ -13,6 +14,7 @@ import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
@@ -20,7 +22,7 @@ import java.util.List;
 
 @Controller
 public class SearchController {
-    private Logger mainLogger = LogManager.getLogger(SearchController.class);
+    private final Logger mainLogger = LogManager.getLogger(SearchController.class);
     private SearchResponse searchResponse = new SearchResponse();
 
 
@@ -33,16 +35,12 @@ public class SearchController {
         return "search";
     }
 
-    @GetMapping("/statistics")
-    public ResponseEntity<Object> getStatistics(){
-        return ResponseEntity.ok (searchResponse);
-    }
-
     @PostMapping("/search")
-    public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model) {
+    public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model,
+                         @RequestParam(name = "site", required = false, defaultValue = "all") String site)
+    {
         if (!errors.hasErrors()) {
-//            searchResponses = searchService.search(searchRequest);
-            searchResponse = searchService.search(searchRequest);
+            searchResponse = searchService.search(searchRequest, site);
             return "redirect:/search";
         } else {
             mainLogger.info(errors.getAllErrors());

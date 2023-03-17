@@ -7,8 +7,8 @@ import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -64,7 +64,9 @@ public class LemmaService {
     public Optional<Lemma> findLemma(String lemma) {
         return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
-
+    public Optional<List<Lemma>> findLemmas(String lemma) {
+        return lemmaRepository.findAllByLemma(lemma);
+    }
     public Optional<List<Lemma>> getLemmaList(Site site) {
         return lemmaRepository.getLemmaBySite(site);
     }

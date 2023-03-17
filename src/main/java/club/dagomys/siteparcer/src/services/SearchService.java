@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class SearchService {
     private final Logger mainLogger = LogManager.getLogger(SearchService.class);
     private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
+    private Site site;
 
     @Autowired
     private LemmaService lemmaService;
@@ -36,36 +37,42 @@ public class SearchService {
     private PageService pageService;
 
     @Autowired
+    private SiteService siteService;
+
+    @Autowired
     private SearchIndexService searchIndexService;
 
     private LemmaCounter counter;
 
 
-    public SearchResponse search(SearchRequest searchLine) {
+    public SearchResponse search(SearchRequest searchLine, String site) {
+        Optional<Site> findSite = siteService.getSite(site);
+        findSite.ifPresent(value -> this.site = value);
         mainLogger.info("Поисковый запрос \t" + searchLine);
+        SearchResponse response = new SearchResponse();
         List<Lemma> findLemmas = new ArrayList<>(getLemmasFromRequest(searchLine.getSearchLine()));
         Lemma minFreqLemma = getMinLemma(findLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
         List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
-        List<Page> pageIndexes = new ArrayList<>();
-        SearchResponse response = new SearchResponse();
-        indexingList.forEach(indexing -> pageIndexes.add(indexing.getPage()));
+        List<Page> pages = new ArrayList<>();
+        indexingList.forEach(indexing -> pages.add(indexing.getPage()));
 
         for (Lemma lemma : findLemmas) {
-            if (!pageIndexes.isEmpty() && lemma != minFreqLemma) {
+            if (!pages.isEmpty() && lemma != minFreqLemma) {
                 List<SearchIndex> secondIndexSearch = searchIndexService.findIndexByLemma(lemma);
-                List<Page> tempList = new ArrayList<>();
-                secondIndexSearch.forEach(indexing -> tempList.add(indexing.getPage()));
-                findPages.retainAll(tempList);
+                List<Page> pageList = new ArrayList<>();
+                secondIndexSearch.forEach(indexing -> pageList.add(indexing.getPage()));
+                findPages.retainAll(pageList);
             }
         }
 
         Map<Page, Float> pagesForRelevance = getRelRelevance(findPages, findLemmas);
-        if(pagesForRelevance.isEmpty()){
+        List<SearchData> data = new ArrayList<>();
+        if(pagesForRelevance.isEmpty() || searchLine.isEmpty()){
             response.setResult(false);
-            return response;
+            response.setError("По запросу ничего не найдено или задан пустой поисковый запрос");
+            response.setSearchData(data);
         } else {
-            List<SearchData> data = new ArrayList<>();
             response.setResult(true);
             response.setCount(pagesForRelevance.size());
             pagesForRelevance.forEach((page, relevance) -> {
@@ -74,12 +81,12 @@ public class SearchService {
             response.setSearchData(data);
             mainLogger.info("RESPONSE " + response);
         }
-
         return response;
+
     }
 
     private SearchData getResponse(Site site, Page page, float relevance, List<Lemma> requestLemmas) {
-        return new SearchData(site.getUrl(), site.getName(),getAbsLink(page), getTitle(page), getSnippet(page, requestLemmas), relevance);
+        return new SearchData(site.getUrl(), site.getName(),page.getRelPath().replaceFirst("/",""), getTitle(page), getSnippet(page, requestLemmas), relevance);
     }
 
     private String getTitle(Page page) {
@@ -203,7 +210,7 @@ public class SearchService {
         mainLogger.info("RELEVANCE MAX \t" + maxRel);
         mainLogger.warn("page store size " + sortedMap.size());
         sortedMap.forEach((key, value) -> {
-            mainLogger.warn(key.getRelPath() + "\t ==> " + value);
+            mainLogger.warn(key.getId() + "\t ==> " + value);
         });
 
 
@@ -212,21 +219,21 @@ public class SearchService {
 
 
     private List<Lemma> getLemmasFromRequest(String searchLine) {
-        List<Lemma> findLemmas = new ArrayList<>();
+        List<Lemma> lemmaList = new ArrayList<>();
         try {
             counter = new LemmaCounter(searchLine);
             Map<String, Integer> lemmas = counter.countLemmas();
             lemmas.forEach((key, value) -> {
-                Optional<Lemma> findLemma = lemmaService.findLemma(key);
-                findLemma.ifPresentOrElse(findLemmas::add, ArrayList::new);
+                Optional<List<Lemma>> findLemmas = lemmaService.findLemmas(key);
+                lemmaList.addAll(findLemmas.get().stream().filter(lemma -> lemma.getSite().equals(site)).toList());
             });
-            deleteCommonLemmas(findLemmas);
+            deleteCommonLemmas(lemmaList);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        sortLemmasByFrequency(findLemmas);
-        mainLogger.info("FIND LEMMAS \t" + findLemmas);
-        return findLemmas;
+        sortLemmasByFrequency(lemmaList);
+        mainLogger.info("FIND LEMMAS \t" + lemmaList);
+        return lemmaList;
     }
 
     private Set<Lemma> deleteCommonLemmas(List<Lemma> lemmas) {
@@ -245,7 +252,7 @@ public class SearchService {
     private List<Page> findIndexedPage(Lemma lemma) {
         List<SearchIndex> findPages = new ArrayList<>();
         if (lemma == null) {
-            mainLogger.info("empty lemma indexed");
+            mainLogger.error("lemma not exist");
         } else {
             findPages = new ArrayList<>(searchIndexService.findIndexByLemma(lemma));
         }
@@ -253,9 +260,9 @@ public class SearchService {
     }
 
     private Lemma getMinLemma(List<Lemma> lemmaList) {
-        if (lemmaList.size() == 1) {
-            return lemmaList.get(0);
-        } else
+//        if (lemmaList.size() == 1) {
+//            return lemmaList.get(0);
+//        } else
             return lemmaList.stream().min(Comparator.comparing(Lemma::getFrequency)).orElse(null);
     }
 

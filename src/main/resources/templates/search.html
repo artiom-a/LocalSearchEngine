@@ -5,13 +5,13 @@
 <div class="container">
     <h1>WEB search</h1>
     <hr>
-        <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Back to main</a>
+    <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Back to main</a>
     <form action="#" th:action="@{/search}" method="POST" th:object="${searchRequest}">
         <input type="text" th:field="*{searchLine}" placeholder="введите строку поиска..." class="form-control mb-4">
         <div th:each="err : ${#fields.errors('searchLine')}">
-            <li  th:text ="${err}"></li>
+            <li th:text="${err}"></li>
         </div>
-        <button type="submit" class="btn btn-success col-2"> Go-> </button>
+        <button type="submit" class="btn btn-success col-2"> Go-></button>
     </form>
 
     <hr>
@@ -27,15 +27,17 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="index, stat: ${indexList.searchData}">
+            <span th:each="index: ${indexList}">
+            <tr th:each="col, stat : ${index.searchData}">
                 <td th:text="${stat.index + 1}"></td>
-<!--                <td th:text="${index.id}"></td>-->
-                <td th:text="${index.title}"></td>
-                <td th:utext="${index.URI}"></td>
-                <td th:utext="${index.snippet}"></td>
-<!--                <td th:text="${index.lemma.lemma}"></td>-->
-<!--                <td th:text="${index.rank}"></td>-->
+                <!--                <td th:text="${index.id}"></td>-->
+                <td th:text="${col.title}"></td>
+                <td th:utext="${col.URI}"></td>
+                <td th:utext="${col.snippet}"></td>
+                <!--                <td th:text="${index.lemma.lemma}"></td>-->
+                <!--                <td th:text="${index.rank}"></td>-->
             </tr>
+            </span>
             </tbody>
         </table>
     </div>

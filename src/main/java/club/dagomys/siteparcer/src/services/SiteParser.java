@@ -57,15 +57,18 @@ public class SiteParser extends RecursiveTask<Link> {
             int status = siteFile.connection().response().statusCode();
             siteElements.forEach(link -> {
                 String absolutURL = link.absUrl("href");
-                String relativeURL = link.attr("href");
+                StringBuilder relativeURL = new StringBuilder(absolutURL.replace(site.getUrl(),""));
+                if(relativeURL.indexOf("/",0)!=0){
+                    relativeURL.insert(0,"/");
 
+                }
                 rootURL.setHtml(siteFile.outerHtml());
                 rootURL.setStatusCode(status);
                 rootURL.setSite(site);
                 if (urlChecker(absolutURL)) {
                     Link child = new Link(absolutURL);
                     child.setSite(site);
-                    rootURL.addChild(child, relativeURL);
+                    rootURL.addChild(child, relativeURL.toString());
                 }
 
             });

@@ -45,7 +45,7 @@ public class SearchIndexService {
     }
 
 
-    public SearchIndex findIndexByPageAndLemma(Page page, Lemma lemma) throws Throwable {
+    public SearchIndex findIndexByPageAndLemma(Page page, Lemma lemma) {
         return searchIndexRepository.findByPageAndLemma(page, lemma).orElseThrow(() ->
                 new EntityNotFoundException("SearchIndex object is not found " + page.getRelPath() + "\t" + lemma.getLemma()));
     }

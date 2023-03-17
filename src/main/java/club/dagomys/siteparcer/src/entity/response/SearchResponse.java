@@ -15,6 +15,7 @@ import java.util.List;
 public class SearchResponse {
     private boolean result;
     private int count;
+    private String error;
     @JsonProperty("data")
     private List<SearchData> searchData;
 }

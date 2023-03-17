@@ -15,4 +15,8 @@ import javax.validation.constraints.Pattern;
 public class SearchRequest {
     @NotBlank(message = "Поле не должно быть пустым")
     private String searchLine;
+
+    public boolean isEmpty() {
+        return searchLine.isEmpty();
+    }
 }

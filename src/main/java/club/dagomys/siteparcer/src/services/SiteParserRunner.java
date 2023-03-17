@@ -175,7 +175,9 @@ public class SiteParserRunner implements Runnable {
             mainLogger.info("Start parsing \t" + this.site.getUrl() + "" + page.getRelPath());
             Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
             indexedPageMap.forEach((key, value) -> {
-                Lemma findLemma = lemmas.parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseGet(Lemma::new);
+                Lemma findLemma = lemmas.stream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseThrow();
+//                Lemma findLemma = mainService.getLemmaService().findLemma(key).get();
+
                 mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
             });
             long endTime = System.currentTimeMillis();

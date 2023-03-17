@@ -52,26 +52,15 @@ public class APIController {
         return new ResponseEntity<>(statistics, HttpStatus.OK);
     }
 
-    @GetMapping(value = "/search", produces = "application/json")
-    public @ResponseBody ResponseEntity<?> getSearchResults(
-            @RequestParam(name = "query", required = false) String query,
-            @RequestParam(name = "site", required = false, defaultValue = "all") Site site,
+    @GetMapping(value = "/search")
+    public ResponseEntity<SearchResponse> getSearchResults(
+            @RequestParam(name = "query") SearchRequest query,
+            @RequestParam(name = "site", required = false, defaultValue = "all") String site,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
             @RequestParam(name = "limit", required = false, defaultValue = "0") int limit
     ) {
-        if (query == null) {
-            JSONObject response = new JSONObject();
+        SearchResponse response = searchService.search(query, site);
 
-            try {
-                response.put("result", false);
-                response.put("error", "Задан пустой поисковый запрос");
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
-            }
-
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        }
-        SearchResponse response = searchService.search(new SearchRequest(query));
-        return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
