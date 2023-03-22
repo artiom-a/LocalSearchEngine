@@ -58,6 +58,8 @@ public class SiteParserRunner implements Runnable {
                 createSearchSiteIndexes();
             } catch (Exception ex) {
 //            mainLogger.error(ex);
+                site.setStatus(SiteStatus.FAILED);
+                mainService.getSiteService().saveOrUpdate(site);
                 mainLogger.error(ex.getMessage());
             }
             doStop();
@@ -176,8 +178,6 @@ public class SiteParserRunner implements Runnable {
             Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
             indexedPageMap.forEach((key, value) -> {
                 Lemma findLemma = lemmas.stream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseThrow();
-//                Lemma findLemma = mainService.getLemmaService().findLemma(key).get();
-
                 mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
             });
             long endTime = System.currentTimeMillis();

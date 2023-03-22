@@ -24,8 +24,8 @@ public class AppConfig {
     public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
         return (String[] args) -> {
             site.forEach(site1 -> {
-                if (!site1.getUrl().endsWith("/")) {
-                    site1.setUrl(site1.getUrl().concat("/"));
+                if (site1.getUrl().endsWith("/")) {
+                    site1.setUrl(site1.getUrl().strip().replaceFirst(".$",""));
                 }
                 Optional<Site> findSite = siteService.getSite(site1.getUrl());
                 if (findSite.isEmpty()) {
