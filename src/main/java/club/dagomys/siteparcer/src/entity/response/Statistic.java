@@ -1,5 +1,7 @@
 package club.dagomys.siteparcer.src.entity.response;
 
+import club.dagomys.siteparcer.src.entity.Lemma;
+import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.Site;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

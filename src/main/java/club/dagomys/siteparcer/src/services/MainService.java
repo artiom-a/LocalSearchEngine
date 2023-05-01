@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,6 +46,9 @@ public class MainService {
     @Autowired
     private ThreadPoolTaskExecutor asyncService;
 
+    @Autowired
+    private ForkJoinPool forkJoinPool;
+
 
     public void startIndexingSites(boolean isAllSite, Site site){
         try {
@@ -68,7 +72,7 @@ public class MainService {
                 }
             }
         } catch (Exception e){
-            mainLogger.error("Ошибка индексации");
+            mainLogger.error("Ошибка индексации " + e);
         } finally {
             isIndexing.set(false);
             mainLogger.info("SITE PARSING IS FINISHED!");
@@ -78,9 +82,15 @@ public class MainService {
 
     public void stopIndexingSites() {
         try {
-            mainLogger.error("App stopping..." + asyncService.getPoolSize());
-        } catch (Exception interruptedException) {
-            mainLogger.warn("App is stopped! " + interruptedException.getMessage());
+            if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS)) {
+                asyncService.getThreadPoolExecutor().shutdownNow();
+                forkJoinPool.shutdownNow();
+                if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS))
+                    System.err.println("Pool did not terminate");
+            }
+        } catch (InterruptedException ie) {
+            asyncService.getThreadPoolExecutor().shutdownNow();
+            forkJoinPool.shutdownNow();
         }
     }
 
@@ -139,5 +149,9 @@ public class MainService {
     public SearchIndexService getSearchIndexService() {
         return searchIndexService;
     }
+    public ForkJoinPool getForkJoinPool() {
+        return forkJoinPool;
+    }
+
 
 }

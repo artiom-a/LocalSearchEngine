@@ -64,9 +64,15 @@ public class LemmaService {
     public Optional<Lemma> findLemma(String lemma) {
         return lemmaRepository.findAll().stream().filter(l -> l.getLemma().equalsIgnoreCase(lemma)).findFirst();
     }
+
     public Optional<List<Lemma>> findLemmas(String lemma) {
         return lemmaRepository.findAllByLemma(lemma);
     }
+
+    public Optional<Lemma> findByLemmaAndSite(String lemma, Site site) {
+        return lemmaRepository.findByLemmaAndSite(lemma, site);
+    }
+
     public Optional<List<Lemma>> getLemmaList(Site site) {
         return lemmaRepository.getLemmaBySite(site);
     }

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface LemmaRepository extends JpaRepository<Lemma, Integer> {
@@ -15,7 +16,7 @@ public interface LemmaRepository extends JpaRepository<Lemma, Integer> {
     Optional<Lemma> findByLemmaAndSite(String name, Site site);
     Optional<List<Lemma>> getLemmaBySite(Site site);
     Optional<List<Lemma>> findAllByLemma(String lemma);
-    void deleteAllBySite(Site site);
+    Optional<Set<Lemma>> getLemmaSetBySite(Site site);
     @Transactional
     void deleteLemmaBySite(Site site);
 

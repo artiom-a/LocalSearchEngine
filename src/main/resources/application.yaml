@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mysql://v32:3306/search_engine
+    url: jdbc:mysql://localhost:3306/search_engine
     username: skillbox_engine
     password: skillbox_engine
   jpa:
@@ -32,6 +32,8 @@ app-configuration:
       url: https://dostavka.yandex.ru
     - name: ""
       url: https://www.svetlovka.ru/
+    - name: ""
+      url: https://andaseat.com
 
 
 

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -17,5 +18,5 @@ public class SearchResponse {
     private int count;
     private String error;
     @JsonProperty("data")
-    private List<SearchData> searchData;
+    private Set<SearchData> searchData;
 }

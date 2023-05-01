@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.annotation.Async;
 
 import javax.persistence.*;
@@ -21,7 +22,7 @@ import java.util.concurrent.CompletableFuture;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-public class Site implements Serializable {
+public class Site implements Serializable, Comparable<Site> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -44,4 +45,8 @@ public class Site implements Serializable {
         this.url = rootLink.getValue();
     }
 
+    @Override
+    public int compareTo(@NotNull Site o) {
+        return this.getUrl().compareTo(o.getUrl());
+    }
 }

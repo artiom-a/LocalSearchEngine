@@ -3,6 +3,8 @@ package club.dagomys.siteparcer.src.config;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.services.SiteService;
 import lombok.Data;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.boot.CommandLineRunner;
@@ -18,6 +20,7 @@ import java.util.Optional;
 @ConfigurationProperties("app-configuration")
 @Data
 public class AppConfig {
+    private Logger mainLogger = LogManager.getLogger(AppConfig.class);
     private List<Site> site;
 
     @Bean
@@ -40,7 +43,7 @@ public class AppConfig {
                             site1.setName(siteFile.title());
                             siteService.saveOrUpdate(site1);
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            mainLogger.error(site1.getUrl() + " " + e.getMessage());
                         }
                     } else {
                         siteService.saveSite(site1);

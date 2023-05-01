@@ -17,7 +17,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class SiteParserRunner implements Runnable {
@@ -25,7 +24,6 @@ public class SiteParserRunner implements Runnable {
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
     private final ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
     private final Site site;
-    private AtomicBoolean isStarted = new AtomicBoolean(false);
     private volatile boolean doStop = false;
 
     @Autowired
@@ -191,7 +189,7 @@ public class SiteParserRunner implements Runnable {
         Link rootLink = new Link(this.site.getUrl());
         mainService.getSiteService().saveSite(this.site);
         RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, this.site);
-        return siteMapPool.invoke(forkJoinTask);
+        return mainService.getForkJoinPool().invoke(forkJoinTask);
     }
 
 

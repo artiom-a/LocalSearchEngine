@@ -41,11 +41,11 @@ public class Lemma implements Comparable<Lemma> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || this.getClass() != o.getClass()) return false;
 
         Lemma lemma1 = (Lemma) o;
 
-        return Objects.equals(lemma, lemma1.lemma);
+        return this.lemma.equals(lemma1.lemma) && this.site.equals(lemma1.site) && this.frequency == lemma1.frequency;
     }
 
 
