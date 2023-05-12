@@ -26,7 +26,6 @@ public class SearchService {
     private final Logger mainLogger = LogManager.getLogger(SearchService.class);
     private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
     private Site site;
-    private Set<Site> siteSet = new TreeSet<>();
 
     @Autowired
     private LemmaService lemmaService;
@@ -52,7 +51,8 @@ public class SearchService {
         Map<Site, List<Lemma>> test = getSiteLemmaMap(requestLemmas);
 
         if (findSite.isPresent()) {
-            findLemmas.addAll(requestLemmas.stream().filter(lemma -> lemma.getSite().equals(findSite.get())).toList());
+            this.site = findSite.get();
+            findLemmas.addAll(requestLemmas.stream().filter(lemma -> lemma.getSite().equals(this.site)).toList());
             findPages.addAll(getSearchData(findLemmas));
         } else {
             test.forEach((s, l) -> {
@@ -222,12 +222,10 @@ public class SearchService {
                 Optional<List<Lemma>> findLemmas = lemmaService.findLemmas(key);
                 findLemmas.ifPresent(lemmaList::addAll);
             });
-            siteSet = lemmaList.stream().map(Lemma::getSite).collect(Collectors.toSet());
             deleteCommonLemmas(lemmaList);
         } catch (IOException e) {
             e.printStackTrace();
         }
-//        sortLemmasByFrequency(lemmaList);
         mainLogger.info("FIND LEMMAS \t" + lemmaList);
         return lemmaList;
     }
@@ -270,9 +268,6 @@ public class SearchService {
                 lemmas.add(l);
                 lemmaMap.put(l.getSite(), lemmas);
             }
-        }
-        for (List<Lemma> lemmas : lemmaMap.values()) {
-            Collections.sort(lemmas);
         }
         return lemmaMap;
     }

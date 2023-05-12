@@ -35,7 +35,7 @@ public class Lemma implements Comparable<Lemma> {
 
     @Override
     public int compareTo(Lemma o) {
-        return this.frequency.compareTo(o.getFrequency());
+        return this.getLemma().compareTo(o.getLemma());
     }
 
     @Override

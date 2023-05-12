@@ -19,7 +19,7 @@ public class SearchData implements Comparable<SearchData> {
     private String snippet;
     private Float relevance;
 
-    public SearchData(Page page, String title, String snippet, float relevance){
+    public SearchData(Page page, String title, String snippet, float relevance) {
         this.rootUrl = page.getSite().getUrl();
         this.siteName = page.getSite().getName();
         this.URI = page.getRelPath();
@@ -30,6 +30,10 @@ public class SearchData implements Comparable<SearchData> {
 
     @Override
     public int compareTo(@NotNull SearchData o) {
-        return o.relevance.compareTo(this.relevance);
+        int res = o.relevance.compareTo(this.relevance);
+        if (res == 0) {
+            res = o.URI.compareTo(this.URI);
+        }
+        return res;
     }
 }

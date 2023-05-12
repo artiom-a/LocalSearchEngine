@@ -1,19 +1,25 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.*;
+import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
 import club.dagomys.siteparcer.src.entity.response.Detail;
 import club.dagomys.siteparcer.src.entity.response.Statistic;
 import club.dagomys.siteparcer.src.entity.response.Total;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.sql.Struct;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -153,5 +159,35 @@ public class MainService {
         return forkJoinPool;
     }
 
+    public void reindexPage(URLRequest URL) {
+        List<Site> siteList = siteService.getAllSites();
+        Optional<Site> site = Optional.empty();
+        Page page = null;
+
+                Link rootLink = new Link(URL.getPath());
+            for (Site s : siteList) {
+                if (rootLink.getValue().contains(s.getUrl())) {
+                    site = Optional.of(s);
+                    mainLogger.info(site);
+                    String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
+                    page = pageService.getByRelPathAndSite(relativeURL, site.get());
+                }
+            }
+        try {
+            Document pageFile = Jsoup
+                    .connect(page.getSite().getUrl()+page.getRelPath())
+                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                    .referrer("http://www.google.com")
+                    .ignoreHttpErrors(false)
+                    .get();
+            page.setContent(pageFile.outerHtml());
+            page.setStatusCode(pageFile.connection().response().statusCode());
+            pageService.saveOrUpdate(page);
+        } catch (Exception e){
+            mainLogger.error(e.getMessage());
+        }
+        site.get().setStatusTime(LocalDateTime.now());
+        siteService.saveOrUpdate(site.get());
+    }
 
 }
