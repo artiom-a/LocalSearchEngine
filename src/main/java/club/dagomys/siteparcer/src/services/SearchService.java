@@ -45,34 +45,36 @@ public class SearchService {
 
     public SearchResponse search(SearchRequest searchLine, String site) {
         SearchResponse response = new SearchResponse();
-        Set<SearchData> searchDataSet = new TreeSet<>();
-        List<Lemma> findLemmas;
-        List<Site> sites = siteService.getAllSites();
+        List<Page> findPages = new ArrayList<>();
+        List<Lemma> findLemmas = new ArrayList<>();
         Optional<Site> findSite = siteService.getSite(site);
+        List<Lemma> requestLemmas = getLemmasFromRequest(searchLine);
+        Map<Site, List<Lemma>> test = getSiteLemmaMap(requestLemmas);
+
         if (findSite.isPresent()) {
-            this.site = findSite.get();
-            findLemmas = getLemmasFromRequest(searchLine, this.site);
-            searchDataSet = getSearchData(findLemmas);
+            findLemmas.addAll(requestLemmas.stream().filter(lemma -> lemma.getSite().equals(findSite.get())).toList());
+            findPages.addAll(getSearchData(findLemmas));
         } else {
-            for (Site s : sites) {
-                searchDataSet.addAll(getSearchData(getLemmasFromRequest(searchLine, s)));
-            }
+            test.forEach((s, l) -> {
+                findPages.addAll(getSearchData(l));
+                findLemmas.addAll(l);
+            });
         }
+        List<SearchData> searchDataList = getRelRelevance(findPages, findLemmas);
         mainLogger.info("Поисковый запрос \t" + searchLine);
-        if (searchDataSet.isEmpty() || searchLine.isEmpty()) {
+        if (searchDataList.isEmpty() || searchLine.isEmpty()) {
             response.setResult(false);
             response.setError("По запросу ничего не найдено или задан пустой поисковый запрос");
-            response.setSearchData(searchDataSet);
         } else {
             response.setResult(true);
-            response.setCount(searchDataSet.size());
+            response.setCount(searchDataList.size());
         }
-        response.setSearchData(searchDataSet);
+        response.setSearchData(searchDataList);
         mainLogger.info("RESPONSE " + response);
         return response;
     }
 
-    private Set<SearchData> getSearchData(List<Lemma> findSiteLemmas) {
+    private List<Page> getSearchData(List<Lemma> findSiteLemmas) {
         Lemma minFreqLemma = getMinLemma(findSiteLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
         List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
@@ -87,7 +89,7 @@ public class SearchService {
                 findPages.retainAll(pageList);
             }
         }
-        return getRelRelevance(findPages, findSiteLemmas);
+        return findPages;
     }
 
     private String getTitle(Page page) {
@@ -189,10 +191,10 @@ public class SearchService {
         return r;
     }
 
-    private Set<SearchData> getRelRelevance(List<Page> pageList, List<Lemma> lemmaList) {
+    private List<SearchData> getRelRelevance(List<Page> pageList, List<Lemma> lemmaList) {
         float maxRel = 0f;
-        Map<Page, Float> pageAbsRelevance = new LinkedHashMap<>();
-        Set<SearchData> pageRelRelevance = new TreeSet<>();
+        Map<Page, Float> pageAbsRelevance = new HashMap<>();
+        List<SearchData> pageRelRelevance = new ArrayList<>();
         for (Page page : pageList) {
             float r = getAbsRelevance(page, lemmaList);
             pageAbsRelevance.put(page, r);
@@ -206,18 +208,19 @@ public class SearchService {
             float relevance = abs.getValue();
             pageRelRelevance.add(new SearchData(p, getTitle(p), getSnippet(p, lemmaList), relevance / maxRel));
         }
+        Collections.sort(pageRelRelevance);
         return pageRelRelevance;
     }
 
 
-    private List<Lemma> getLemmasFromRequest(SearchRequest searchLine, Site site) {
+    private List<Lemma> getLemmasFromRequest(SearchRequest searchLine) {
         List<Lemma> lemmaList = new ArrayList<>();
         try {
             counter = new LemmaCounter(searchLine.getSearchLine());
             Map<String, Integer> lemmas = counter.countLemmas();
             lemmas.forEach((key, value) -> {
-                Optional<Lemma> findLemmas = lemmaService.findByLemmaAndSite(key, site);
-                findLemmas.ifPresent(lemmaList::add);
+                Optional<List<Lemma>> findLemmas = lemmaService.findLemmas(key);
+                findLemmas.ifPresent(lemmaList::addAll);
             });
             siteSet = lemmaList.stream().map(Lemma::getSite).collect(Collectors.toSet());
             deleteCommonLemmas(lemmaList);
@@ -254,6 +257,24 @@ public class SearchService {
 
     private Lemma getMinLemma(List<Lemma> lemmaList) {
         return lemmaList.stream().min(Comparator.comparing(Lemma::getFrequency)).orElse(null);
+    }
+
+    private Map<Site, List<Lemma>> getSiteLemmaMap(List<Lemma> lemmaList) {
+        Map<Site, List<Lemma>> lemmaMap = new TreeMap<>();
+        for (Lemma l : lemmaList) {
+            Site site = l.getSite();
+            if (lemmaMap.containsKey(site)) {
+                lemmaMap.get(site).add(l);
+            } else {
+                List<Lemma> lemmas = new ArrayList<>();
+                lemmas.add(l);
+                lemmaMap.put(l.getSite(), lemmas);
+            }
+        }
+        for (List<Lemma> lemmas : lemmaMap.values()) {
+            Collections.sort(lemmas);
+        }
+        return lemmaMap;
     }
 
     private boolean isAbsURL(Page page) {

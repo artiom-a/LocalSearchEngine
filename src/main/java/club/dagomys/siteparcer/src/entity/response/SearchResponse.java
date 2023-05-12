@@ -18,5 +18,5 @@ public class SearchResponse {
     private int count;
     private String error;
     @JsonProperty("data")
-    private Set<SearchData> searchData;
+    private List<SearchData> searchData;
 }

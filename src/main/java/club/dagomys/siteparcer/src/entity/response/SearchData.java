@@ -30,6 +30,6 @@ public class SearchData implements Comparable<SearchData> {
 
     @Override
     public int compareTo(@NotNull SearchData o) {
-        return this.relevance.compareTo(o.relevance);
+        return o.relevance.compareTo(this.relevance);
     }
 }

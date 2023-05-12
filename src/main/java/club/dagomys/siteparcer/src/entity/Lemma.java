@@ -21,7 +21,7 @@ public class Lemma implements Comparable<Lemma> {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String lemma;
-    private int frequency;
+    private Integer frequency;
 
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     @JoinColumn(name = "site_id", nullable = false)
@@ -35,7 +35,7 @@ public class Lemma implements Comparable<Lemma> {
 
     @Override
     public int compareTo(Lemma o) {
-        return this.getLemma().compareTo(o.getLemma());
+        return this.frequency.compareTo(o.getFrequency());
     }
 
     @Override
