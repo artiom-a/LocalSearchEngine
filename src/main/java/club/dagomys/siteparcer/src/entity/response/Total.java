@@ -17,5 +17,6 @@ public class Total {
     private int siteCount;
     @JsonProperty("pages")
     private int pageCount;
+    @JsonProperty("isIndexing")
     private boolean isIndexing;
 }

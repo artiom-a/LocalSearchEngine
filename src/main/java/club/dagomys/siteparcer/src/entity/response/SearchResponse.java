@@ -13,8 +13,7 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SearchResponse {
-    private boolean result;
+public class SearchResponse extends Response {
     private int count;
     private String error;
     @JsonProperty("data")

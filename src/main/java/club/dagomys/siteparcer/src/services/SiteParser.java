@@ -2,7 +2,6 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.exception.SiteErrorException;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,34 +44,10 @@ public class SiteParser extends RecursiveTask<Link> {
     protected Link compute() {
         List<SiteParser> childParserList = new ArrayList<>();
         List<Link> childList = new ArrayList<>();
+        Link connLink = null;
         try {
-            Thread.sleep(120);
-            Document siteFile = Jsoup
-                    .connect(rootURL.getValue())
-                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                    .referrer("http://www.google.com")
-                    .ignoreHttpErrors(false)
-                    .get();
-            Elements siteElements = siteFile.select("a[href]");
-            int status = siteFile.connection().response().statusCode();
-            siteElements.forEach(link -> {
-                String absolutURL = link.absUrl("href");
-                StringBuilder relativeURL = new StringBuilder(absolutURL.replace(site.getUrl(),""));
-                if(relativeURL.indexOf("/",0)!=0){
-                    relativeURL.insert(0,"/");
-
-                }
-                rootURL.setHtml(siteFile.outerHtml());
-                rootURL.setStatusCode(status);
-                rootURL.setSite(site);
-                if (urlChecker(absolutURL)) {
-                    Link child = new Link(absolutURL);
-                    child.setSite(site);
-                    rootURL.addChild(child, relativeURL.toString());
-                }
-
-            });
-            for (Link child : rootURL.getChildren()) {
+            connLink = connectToLink(rootURL);
+            for (Link child : connLink.getChildren()) {
                 SiteParser childParser = new SiteParser(child, mainService, site);
                 childParser.fork();
                 childParserList.add(childParser);
@@ -81,12 +56,10 @@ public class SiteParser extends RecursiveTask<Link> {
                 mainLogger.info("\t\t" + childTask.compute());
                 childList.add(childTask.join());
             }
-        } catch (IOException | InterruptedException e) {
-            this.site.setLastError(e.getMessage());
-            mainService.getSiteService().saveOrUpdate(site);
+        } catch (IOException e) {
             mainLogger.error(e.getMessage());
         }
-        return rootURL;
+        return connLink;
     }
 
     private boolean urlChecker(String url) {
@@ -99,6 +72,42 @@ public class SiteParser extends RecursiveTask<Link> {
                         patternRootDomain.matcher(url).lookingAt() &
                         !file.matcher(url).find() &
                         !anchor.matcher(url).find();
+    }
+
+    public Link connectToLink(Link connectedLink) {
+        try {
+            Thread.sleep(120);
+            Document siteFile = Jsoup
+                    .connect(connectedLink.getValue())
+                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                    .referrer("http://www.google.com")
+                    .ignoreHttpErrors(false)
+                    .get();
+            Elements siteElements = siteFile.select("a[href]");
+            int status = siteFile.connection().response().statusCode();
+            siteElements.forEach(link -> {
+                String absolutURL = link.absUrl("href");
+                StringBuilder relativeURL = new StringBuilder(absolutURL.replace(site.getUrl(), ""));
+                if (relativeURL.indexOf("/", 0) != 0) {
+                    relativeURL.insert(0, "/");
+
+                }
+                connectedLink.setHtml(siteFile.outerHtml());
+                connectedLink.setStatusCode(status);
+                connectedLink.setSite(site);
+                if (urlChecker(absolutURL)) {
+                    Link child = new Link(absolutURL);
+                    child.setSite(site);
+                    connectedLink.addChild(child, relativeURL.toString());
+                }
+
+            });
+        } catch (Exception e) {
+            this.site.setLastError(e.getMessage());
+            mainService.getSiteService().saveOrUpdate(site);
+            mainLogger.error(e.getMessage());
+        }
+        return connectedLink;
     }
 
 }

@@ -9,7 +9,6 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class DashboardResponse {
-    private boolean result;
+public class DashboardResponse extends Response {
     private Statistic statistics;
 }

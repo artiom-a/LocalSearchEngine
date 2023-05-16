@@ -6,6 +6,7 @@ import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
 import club.dagomys.siteparcer.src.entity.response.Detail;
 import club.dagomys.siteparcer.src.entity.response.Statistic;
 import club.dagomys.siteparcer.src.entity.response.Total;
+import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -14,8 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.sql.Struct;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class MainService {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
-    AtomicBoolean isIndexing = new AtomicBoolean(false);
+    AtomicBoolean isIndexing = new AtomicBoolean();
 
 
     @Autowired
@@ -56,48 +56,58 @@ public class MainService {
     private ForkJoinPool forkJoinPool;
 
 
-    public void startIndexingSites(boolean isAllSite, Site site){
+    public boolean startIndexingSites(boolean isAllSite, Site site) {
         try {
             if (isAllSite) {
                 siteService.getAllSites().forEach(s -> {
                     if (s.getStatus() != SiteStatus.INDEXING) {
                         isIndexing.set(true);
-                        asyncService.getThreadPoolExecutor().execute(new SiteParserRunner(s, this));
+                        asyncService.getThreadPoolExecutor().submit(new SiteParserRunner(s, this));
                     } else {
-                        isIndexing.set(false);
                         mainLogger.error(s.getUrl() + " is indexing");
                     }
                 });
+                if (asyncService.getActiveCount()==0){
+                    isIndexing.set(false);
+                }
+
             } else {
                 if (site.getStatus() != SiteStatus.INDEXING) {
                     isIndexing.set(true);
-                    asyncService.getThreadPoolExecutor().execute(new SiteParserRunner(site, this));
+                    asyncService.getThreadPoolExecutor().submit(new SiteParserRunner(site, this));
                 } else {
-                    isIndexing.set(false);
                     mainLogger.info(site.getUrl() + " status is " + site.getStatus());
                 }
+                while (asyncService.getActiveCount()==0){
+                    isIndexing.set(false);
+                }
             }
-        } catch (Exception e){
+            return isIndexing.get();
+        } catch (Exception e) {
             mainLogger.error("Ошибка индексации " + e);
-        } finally {
-            isIndexing.set(false);
-            mainLogger.info("SITE PARSING IS FINISHED!");
+            return isIndexing.get();
         }
-
     }
 
-    public void stopIndexingSites() {
+    public boolean stopIndexingSites() {
         try {
             if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS)) {
                 asyncService.getThreadPoolExecutor().shutdownNow();
                 forkJoinPool.shutdownNow();
                 if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS))
-                    System.err.println("Pool did not terminate");
+                    mainLogger.error("Pool did not terminate");
             }
+            siteService.getAllSites().forEach(site -> {
+                site.setStatusTime(LocalDateTime.now());
+                site.setStatus(SiteStatus.FAILED);
+                siteService.saveOrUpdate(site);
+            });
         } catch (InterruptedException ie) {
             asyncService.getThreadPoolExecutor().shutdownNow();
             forkJoinPool.shutdownNow();
         }
+        isIndexing.set(false);
+        return isIndexing.get();
     }
 
     public DashboardResponse getStatistic() {
@@ -155,6 +165,7 @@ public class MainService {
     public SearchIndexService getSearchIndexService() {
         return searchIndexService;
     }
+
     public ForkJoinPool getForkJoinPool() {
         return forkJoinPool;
     }
@@ -162,32 +173,47 @@ public class MainService {
     public void reindexPage(URLRequest URL) {
         List<Site> siteList = siteService.getAllSites();
         Optional<Site> site = Optional.empty();
-        Page page = null;
+        Optional<Page> page = Optional.of(new Page());
 
-                Link rootLink = new Link(URL.getPath());
+        Link rootLink = new Link(URL.getPath());
+        try {
             for (Site s : siteList) {
+                if (s.getStatus() == SiteStatus.INDEXING) {
+                    throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
+                }
                 if (rootLink.getValue().contains(s.getUrl())) {
                     site = Optional.of(s);
                     mainLogger.info(site);
-                    String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
-                    page = pageService.getByRelPathAndSite(relativeURL, site.get());
                 }
             }
-        try {
-            Document pageFile = Jsoup
-                    .connect(page.getSite().getUrl()+page.getRelPath())
-                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                    .referrer("http://www.google.com")
-                    .ignoreHttpErrors(false)
-                    .get();
-            page.setContent(pageFile.outerHtml());
-            page.setStatusCode(pageFile.connection().response().statusCode());
-            pageService.saveOrUpdate(page);
-        } catch (Exception e){
+            if (site.isPresent()) {
+                String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
+                page.get().setRelPath(relativeURL);
+                page.get().setSite(site.get());
+                try {
+                    Document pageFile = Jsoup
+                            .connect(site.get().getUrl() + page.get().getRelPath())
+                            .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                            .referrer("http://www.google.com")
+                            .ignoreHttpErrors(false)
+                            .get();
+                    page.get().setContent(pageFile.outerHtml());
+                    page.get().setStatusCode(pageFile.connection().response().statusCode());
+                    pageService.saveOrUpdate(page.get());
+                } catch (Exception e) {
+                    mainLogger.error(e.getMessage());
+                }
+                site.get().setStatusTime(LocalDateTime.now());
+                siteService.saveOrUpdate(site.get());
+            } else {
+                throw new PageIndexingException("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
+            }
+
+        } catch (Exception e) {
             mainLogger.error(e.getMessage());
         }
-        site.get().setStatusTime(LocalDateTime.now());
-        siteService.saveOrUpdate(site.get());
+
+
     }
 
 }

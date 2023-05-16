@@ -6,6 +6,7 @@ import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
+import club.dagomys.siteparcer.src.entity.response.Response;
 import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 
 import club.dagomys.siteparcer.src.services.MainService;
@@ -40,13 +41,25 @@ public class APIController {
     private SearchService searchService;
 
     @GetMapping("/startIndexing")
-    public void startIndexing() throws InterruptedException {
-        mainService.startIndexingSites(true, null);
+    public ResponseEntity<Response> startIndexing() throws InterruptedException {
+        Response response = new Response() {
+            @Override
+            public boolean isResult() {
+                return mainService.startIndexingSites(true, null);
+            }
+        };
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/stopIndexing")
-    public void stopIndexing() {
-        mainService.stopIndexingSites();
+    public ResponseEntity<Response> stopIndexing() {
+        Response response = new Response() {
+            @Override
+            public boolean isResult() {
+                return mainService.stopIndexingSites();
+            }
+        };
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 
@@ -68,14 +81,14 @@ public class APIController {
     }
 
     @PostMapping("/indexPage")
-    public ResponseEntity<String> indexPage(@Valid @ModelAttribute("url") URLRequest URL, Errors errors, Model model) {
+    public ResponseEntity<HttpStatus> indexPage(@Valid @ModelAttribute("url") URLRequest URL, Errors errors, Model model) {
         if (!errors.hasErrors()) {
-        mainService.reindexPage(URL);
+            mainService.reindexPage(URL);
         } else {
             mainLogger.error(errors.getAllErrors());
         }
-
-        return new ResponseEntity<>("site.get()", HttpStatus.OK);
+        ResponseEntity<HttpStatus> response = new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 }

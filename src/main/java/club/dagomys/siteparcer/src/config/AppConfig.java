@@ -1,6 +1,7 @@
 package club.dagomys.siteparcer.src.config;
 
 import club.dagomys.siteparcer.src.entity.Site;
+import club.dagomys.siteparcer.src.services.SiteParser;
 import club.dagomys.siteparcer.src.services.SiteService;
 import lombok.Data;
 import org.apache.logging.log4j.LogManager;
@@ -21,32 +22,34 @@ import java.util.Optional;
 @Data
 public class AppConfig {
     private Logger mainLogger = LogManager.getLogger(AppConfig.class);
-    private List<Site> site;
+    private List<Site> siteList;
 
     @Bean
     public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
+        SiteParser parser = new SiteParser();
         return (String[] args) -> {
-            site.forEach(site1 -> {
-                if (site1.getUrl().endsWith("/")) {
-                    site1.setUrl(site1.getUrl().strip().replaceFirst(".$",""));
+            siteList.forEach(site -> {
+                if (site.getUrl().endsWith("/")) {
+                    site.setUrl(site.getUrl().strip().replaceFirst(".$",""));
                 }
-                Optional<Site> findSite = siteService.getSite(site1.getUrl());
+                Optional<Site> findSite = siteService.getSite(site.getUrl());
                 if (findSite.isEmpty()) {
-                    if (site1.getName().isEmpty()) {
+                    if (site.getName().isEmpty()) {
                         try {
                             Document siteFile = Jsoup
-                                    .connect(site1.getUrl())
+                                    .connect(site.getUrl())
                                     .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                                     .referrer("http://www.google.com")
                                     .ignoreHttpErrors(true)
                                     .get();
-                            site1.setName(siteFile.title());
-                            siteService.saveOrUpdate(site1);
-                        } catch (IOException e) {
-                            mainLogger.error(site1.getUrl() + " " + e.getMessage());
+                            site.setName(siteFile.title());
+                        } catch (IOException  e) {
+                            site.setLastError("Site is not found");
+                            mainLogger.error(site.getUrl() + " " + e.getMessage());
                         }
+                        siteService.saveOrUpdate(site);
                     } else {
-                        siteService.saveSite(site1);
+                        siteService.saveSite(site);
                     }
                 } else {
                     siteService.saveOrUpdate(findSite.get());

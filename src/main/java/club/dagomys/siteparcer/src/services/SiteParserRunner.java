@@ -55,7 +55,6 @@ public class SiteParserRunner implements Runnable {
 
                 createSearchSiteIndexes();
             } catch (Exception ex) {
-//            mainLogger.error(ex);
                 site.setStatus(SiteStatus.FAILED);
                 mainService.getSiteService().saveOrUpdate(site);
                 mainLogger.error(ex.getMessage());
