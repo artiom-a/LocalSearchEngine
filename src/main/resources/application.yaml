@@ -16,8 +16,13 @@ spring:
   output:
     ansi:
       enabled: ALWAYS
+springdoc:
+  swagger-ui:
+    path: /openapi
+    operationsSorter: method
+  writer-with-default-pretty-printer: true
 app-configuration:
-  site:
+  siteList:
     - name: ""
       url: https://maxima.school/
     - name: ""                      # if name is EMPTY AppConfig get title from main page
