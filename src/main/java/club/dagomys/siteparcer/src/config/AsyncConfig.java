@@ -27,7 +27,7 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setCorePoolSize(CORE_COUNT);
         executor.setMaxPoolSize(CORE_COUNT);
         executor.setThreadNamePrefix("SiteExecutor-");
-        executor.setWaitForTasksToCompleteOnShutdown(false);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.initialize();
         return executor;
     }

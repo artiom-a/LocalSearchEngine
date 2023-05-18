@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @RestController
@@ -42,23 +43,21 @@ public class APIController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity<Response> startIndexing() throws InterruptedException {
-        Response response = new Response() {
-            @Override
-            public boolean isResult() {
-                return mainService.startIndexingSites(true, null);
-            }
-        };
+        Response response = new Response();
+        response.setResult(mainService.startIndexingSites(true, null));
+        if (response.isResult()) {
+            response.setError("Индексация уже запущена");
+        }
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<Response> stopIndexing() {
-        Response response = new Response() {
-            @Override
-            public boolean isResult() {
-                return mainService.stopIndexingSites();
-            }
-        };
+        Response response = new Response();
+        response.setResult(mainService.stopIndexingSites());
+        if (!response.isResult()) {
+            response.setError("Индексация не запущена");
+        }
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -81,14 +80,18 @@ public class APIController {
     }
 
     @PostMapping("/indexPage")
-    public ResponseEntity<HttpStatus> indexPage(@Valid @ModelAttribute("url") URLRequest URL, Errors errors, Model model) {
+    public ResponseEntity<Response> indexPage(@Valid @ModelAttribute("url") URLRequest URL, Errors errors, Model model) {
+        Response response = new Response();
         if (!errors.hasErrors()) {
-            mainService.reindexPage(URL);
+            response.setResult(mainService.reindexPage(URL));
+            if(!response.isResult()){
+                response.setError("Данная страница находится за пределами сайтов указанных в конфигурационном файле");
+            }
         } else {
+            response.setError(Objects.requireNonNull(errors.getFieldError()).getDefaultMessage());
             mainLogger.error(errors.getAllErrors());
         }
-        ResponseEntity<HttpStatus> response = new ResponseEntity<>(HttpStatus.OK);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 }

@@ -1,5 +1,6 @@
 package club.dagomys.siteparcer.src.services;
 
+import club.dagomys.siteparcer.src.config.SiteThreadPoolExecutor;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
@@ -62,29 +63,25 @@ public class MainService {
                 siteService.getAllSites().forEach(s -> {
                     if (s.getStatus() != SiteStatus.INDEXING) {
                         isIndexing.set(true);
-                        asyncService.getThreadPoolExecutor().submit(new SiteParserRunner(s, this));
+                        asyncService.submit(new SiteParserRunner(s, this));
                     } else {
+                        isIndexing.set(false);
                         mainLogger.error(s.getUrl() + " is indexing");
                     }
                 });
-                if (asyncService.getActiveCount()==0){
-                    isIndexing.set(false);
-                }
-
             } else {
                 if (site.getStatus() != SiteStatus.INDEXING) {
                     isIndexing.set(true);
-                    asyncService.getThreadPoolExecutor().submit(new SiteParserRunner(site, this));
+                    asyncService.submit(new SiteParserRunner(site, this));
                 } else {
-                    mainLogger.info(site.getUrl() + " status is " + site.getStatus());
-                }
-                while (asyncService.getActiveCount()==0){
                     isIndexing.set(false);
+                    mainLogger.info(site.getUrl() + " status is " + site.getStatus());
                 }
             }
             return isIndexing.get();
         } catch (Exception e) {
             mainLogger.error("Ошибка индексации " + e);
+            isIndexing.set(false);
             return isIndexing.get();
         }
     }
@@ -103,8 +100,7 @@ public class MainService {
                 siteService.saveOrUpdate(site);
             });
         } catch (InterruptedException ie) {
-            asyncService.getThreadPoolExecutor().shutdownNow();
-            forkJoinPool.shutdownNow();
+            mainLogger.error(ie.getMessage());
         }
         isIndexing.set(false);
         return isIndexing.get();
@@ -170,7 +166,8 @@ public class MainService {
         return forkJoinPool;
     }
 
-    public void reindexPage(URLRequest URL) {
+    public boolean reindexPage(URLRequest URL) {
+        boolean status;
         List<Site> siteList = siteService.getAllSites();
         Optional<Site> site = Optional.empty();
         Optional<Page> page = Optional.of(new Page());
@@ -205,15 +202,17 @@ public class MainService {
                 }
                 site.get().setStatusTime(LocalDateTime.now());
                 siteService.saveOrUpdate(site.get());
+                status = true;
             } else {
                 throw new PageIndexingException("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
             }
 
         } catch (Exception e) {
+            status = false;
             mainLogger.error(e.getMessage());
         }
 
-
+        return status;
     }
 
 }

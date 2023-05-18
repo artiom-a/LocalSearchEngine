@@ -15,7 +15,6 @@ import java.util.Set;
 @AllArgsConstructor
 public class SearchResponse extends Response {
     private int count;
-    private String error;
     @JsonProperty("data")
     private List<SearchData> searchData;
 }

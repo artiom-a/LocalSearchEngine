@@ -1,6 +1,9 @@
 package club.dagomys.siteparcer.src.entity.response;
 
-public abstract class Response {
+public class Response {
+    private boolean result;
+    private String error;
+
     public boolean isResult() {
         return result;
     }
@@ -9,7 +12,13 @@ public abstract class Response {
         this.result = result;
     }
 
-    private boolean result;
 
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
 
 }
