@@ -4,7 +4,7 @@ public class Response {
     private boolean result;
     private String error;
 
-    public boolean isResult() {
+    public boolean getResult() {
         return result;
     }
 

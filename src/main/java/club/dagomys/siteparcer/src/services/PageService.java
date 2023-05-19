@@ -1,13 +1,18 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.*;
+import club.dagomys.siteparcer.src.entity.request.URLRequest;
+import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.repos.PageRepository;
 import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -69,6 +74,54 @@ public class PageService {
         }
     }
 
+    public boolean reindexPage(URLRequest URL) {
+        boolean status;
+        List<Site> siteList = siteRepository.findAll();
+        Optional<Site> site = Optional.empty();
+        Optional<Page> page = Optional.of(new Page());
+
+        Link rootLink = new Link(URL.getPath());
+        try {
+            for (Site s : siteList) {
+                if (s.getStatus() == SiteStatus.INDEXING) {
+                    throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
+                }
+                if (rootLink.getValue().contains(s.getUrl())) {
+                    site = Optional.of(s);
+                    mainLogger.info(site);
+                }
+            }
+            if (site.isPresent()) {
+                String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
+                page.get().setRelPath(relativeURL);
+                page.get().setSite(site.get());
+                try {
+                    Document pageFile = Jsoup
+                            .connect(site.get().getUrl() + page.get().getRelPath())
+                            .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                            .referrer("http://www.google.com")
+                            .ignoreHttpErrors(false)
+                            .get();
+                    page.get().setContent(pageFile.outerHtml());
+                    page.get().setStatusCode(pageFile.connection().response().statusCode());
+                    saveOrUpdate(page.get());
+                } catch (Exception e) {
+                    mainLogger.error(e.getMessage());
+                }
+                site.get().setStatusTime(LocalDateTime.now());
+                siteRepository.save(site.get());
+                status = true;
+            } else {
+                throw new PageIndexingException("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
+            }
+
+        } catch (Exception e) {
+            status = false;
+            mainLogger.error(e.getMessage());
+        }
+
+        return status;
+    }
     public void deleteAll(List<Page> pageList) {
         pageRepository.deleteAll(pageList);
     }

@@ -1,6 +1,6 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.siteparcer.src.config.SiteThreadPoolExecutor;
+
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
@@ -114,7 +114,6 @@ public class MainService {
 
         AtomicInteger allLemmas = new AtomicInteger();
         AtomicInteger allPages = new AtomicInteger();
-        AtomicInteger allSites = new AtomicInteger();
 
         List<Site> siteList = siteService.getAllSites();
 
@@ -127,12 +126,11 @@ public class MainService {
             int lemmas = lemmaService.getLemmaList(site).get().size();
             allPages.updateAndGet(v -> v + pages);
             allLemmas.updateAndGet(v -> v + lemmas);
-            allSites.getAndIncrement();
             details.add(new Detail(site.getUrl(), site.getName(), site.getStatus(), site.getStatusTime(), site.getLastError(), pages, lemmas));
         });
         total.setLemmaCount(allLemmas.get());
         total.setPageCount(allPages.get());
-        total.setSiteCount(allSites.get());
+        total.setSiteCount(siteService.getSiteCount());
         total.setIndexing(isIndexing.get());
         statistic.setTotal(total);
         statistic.setSiteList(details);
@@ -141,6 +139,8 @@ public class MainService {
 
         return response;
     }
+
+
 
     public FieldService getFieldService() {
         return fieldService;
@@ -164,55 +164,6 @@ public class MainService {
 
     public ForkJoinPool getForkJoinPool() {
         return forkJoinPool;
-    }
-
-    public boolean reindexPage(URLRequest URL) {
-        boolean status;
-        List<Site> siteList = siteService.getAllSites();
-        Optional<Site> site = Optional.empty();
-        Optional<Page> page = Optional.of(new Page());
-
-        Link rootLink = new Link(URL.getPath());
-        try {
-            for (Site s : siteList) {
-                if (s.getStatus() == SiteStatus.INDEXING) {
-                    throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
-                }
-                if (rootLink.getValue().contains(s.getUrl())) {
-                    site = Optional.of(s);
-                    mainLogger.info(site);
-                }
-            }
-            if (site.isPresent()) {
-                String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
-                page.get().setRelPath(relativeURL);
-                page.get().setSite(site.get());
-                try {
-                    Document pageFile = Jsoup
-                            .connect(site.get().getUrl() + page.get().getRelPath())
-                            .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                            .referrer("http://www.google.com")
-                            .ignoreHttpErrors(false)
-                            .get();
-                    page.get().setContent(pageFile.outerHtml());
-                    page.get().setStatusCode(pageFile.connection().response().statusCode());
-                    pageService.saveOrUpdate(page.get());
-                } catch (Exception e) {
-                    mainLogger.error(e.getMessage());
-                }
-                site.get().setStatusTime(LocalDateTime.now());
-                siteService.saveOrUpdate(site.get());
-                status = true;
-            } else {
-                throw new PageIndexingException("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
-            }
-
-        } catch (Exception e) {
-            status = false;
-            mainLogger.error(e.getMessage());
-        }
-
-        return status;
     }
 
 }

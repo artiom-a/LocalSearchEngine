@@ -24,7 +24,7 @@ public class SiteParserRunner implements Runnable {
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
     private final ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
     private final Site site;
-    private volatile boolean doStop = false;
+    private volatile boolean doStop;
 
     @Autowired
     private final MainService mainService;
@@ -35,6 +35,7 @@ public class SiteParserRunner implements Runnable {
     public SiteParserRunner(Site site, MainService mainService) {
         this.mainService = mainService;
         this.site = site;
+        this.doStop = false;
     }
 
 
@@ -56,6 +57,7 @@ public class SiteParserRunner implements Runnable {
                 createSearchSiteIndexes();
             } catch (Exception ex) {
                 site.setStatus(SiteStatus.FAILED);
+                site.setLastError(ex.getMessage());
                 mainService.getSiteService().saveOrUpdate(site);
                 mainLogger.error(ex.getMessage());
             }
@@ -101,7 +103,7 @@ public class SiteParserRunner implements Runnable {
         return mainService.getLemmaService().saveAllLemmas(lemmaList);
     }
 
-    public Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
+    private Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
         Map<String, Lemma> lemmas = new TreeMap<>();
         if (indexingPage.getContent() != null) {
             Document doc = Jsoup.parse(indexingPage.getContent());
@@ -192,7 +194,7 @@ public class SiteParserRunner implements Runnable {
     }
 
 
-    public void insertToDatabase(Link link) {
+    private void insertToDatabase(Link link) {
         Page root = new Page(link);
         link.getChildren().forEach(this::insertToDatabase);
         mainService.getPageService().saveOrUpdate(root);
@@ -203,6 +205,6 @@ public class SiteParserRunner implements Runnable {
     }
 
     private synchronized boolean isRunning() {
-        return !this.doStop;
+        return this.doStop;
     }
 }

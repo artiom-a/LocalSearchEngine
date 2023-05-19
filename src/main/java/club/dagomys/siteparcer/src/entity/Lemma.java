@@ -45,7 +45,7 @@ public class Lemma implements Comparable<Lemma> {
 
         Lemma lemma1 = (Lemma) o;
 
-        return this.lemma.equals(lemma1.lemma) && this.site.equals(lemma1.site) && this.frequency == lemma1.frequency;
+        return this.lemma.equals(lemma1.lemma) && this.site.equals(lemma1.site) && Objects.equals(this.frequency, lemma1.frequency);
     }
 
 
