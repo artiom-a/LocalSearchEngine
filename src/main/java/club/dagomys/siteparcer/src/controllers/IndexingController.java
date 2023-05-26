@@ -36,7 +36,7 @@ public class IndexingController {
     private SiteService siteService;
 
     @GetMapping(value = {"/startIndexing"})
-    public String startIndexing(Model model) throws ExecutionException, InterruptedException {
+    public String startIndexing(Model model){
         mainService.startIndexingSites(true, null);
         return "redirect:/sites";
     }

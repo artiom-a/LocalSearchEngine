@@ -34,7 +34,7 @@ public class APIController {
     public ResponseEntity<Response> startIndexing() throws InterruptedException {
         Response response = new Response();
         response.setResult(mainService.startIndexingSites(true, null));
-        if (response.getResult()) {
+        if (mainService.getIsIndexing()) {
             response.setError("Индексация уже запущена");
         }
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -44,7 +44,7 @@ public class APIController {
     public ResponseEntity<Response> stopIndexing() {
         Response response = new Response();
         response.setResult(mainService.stopIndexingSites());
-        if (!response.getResult()) {
+        if (!mainService.getIsIndexing()) {
             response.setError("Индексация не запущена");
         }
         return new ResponseEntity<>(response, HttpStatus.OK);

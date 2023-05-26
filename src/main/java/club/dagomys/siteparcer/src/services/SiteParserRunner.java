@@ -22,9 +22,8 @@ import java.util.concurrent.*;
 public class SiteParserRunner implements Runnable {
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
-    private final ForkJoinPool siteMapPool = new ForkJoinPool(CORE_COUNT);
     private final Site site;
-    private volatile boolean doStop;
+    private volatile boolean isRunning;
 
     @Autowired
     private final MainService mainService;
@@ -35,7 +34,7 @@ public class SiteParserRunner implements Runnable {
     public SiteParserRunner(Site site, MainService mainService) {
         this.mainService = mainService;
         this.site = site;
-        this.doStop = false;
+        this.isRunning = true;
     }
 
 
@@ -47,7 +46,7 @@ public class SiteParserRunner implements Runnable {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
-        while (isRunning()) {
+        while (isRunning) {
             try {
                 Link siteLinks = getSiteLinks();
                 insertToDatabase(siteLinks);
@@ -56,6 +55,7 @@ public class SiteParserRunner implements Runnable {
 
                 createSearchSiteIndexes();
             } catch (Exception ex) {
+                doStop();
                 site.setStatus(SiteStatus.FAILED);
                 site.setLastError(ex.getMessage());
                 mainService.getSiteService().saveOrUpdate(site);
@@ -92,7 +92,7 @@ public class SiteParserRunner implements Runnable {
         return indexedPagesLemmas;
     }
 
-    private Iterable<Lemma> saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
+    private CompletableFuture<Iterable<Lemma>> saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
         Set<Lemma> lemmaList = new TreeSet<>();
         lemmaMap.forEach((key, value) -> {
             Lemma lemma = new Lemma(key, value);
@@ -100,7 +100,7 @@ public class SiteParserRunner implements Runnable {
             lemmaList.add(lemma);
         });
         mainService.getLemmaService().deleteAllBySite(site);
-        return mainService.getLemmaService().saveAllLemmas(lemmaList);
+        return CompletableFuture.completedFuture(mainService.getLemmaService().saveAllLemmas(lemmaList));
     }
 
     private Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
@@ -186,7 +186,7 @@ public class SiteParserRunner implements Runnable {
     }
 
 
-    public Link getSiteLinks() throws IOException {
+    private Link getSiteLinks() throws IOException {
         Link rootLink = new Link(this.site.getUrl());
         mainService.getSiteService().saveSite(this.site);
         RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, this.site);
@@ -194,17 +194,18 @@ public class SiteParserRunner implements Runnable {
     }
 
 
-    private void insertToDatabase(Link link) {
+    private CompletableFuture<Page> insertToDatabase(Link link) {
         Page root = new Page(link);
         link.getChildren().forEach(this::insertToDatabase);
-        mainService.getPageService().saveOrUpdate(root);
+        return CompletableFuture.completedFuture(mainService.getPageService().saveOrUpdate(root));
     }
 
     public synchronized void doStop() {
-        this.doStop = true;
+        this.isRunning = false;
     }
 
-    private synchronized boolean isRunning() {
-        return this.doStop;
+    public boolean isRunning() {
+        return isRunning;
     }
+
 }

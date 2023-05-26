@@ -31,9 +31,7 @@ public class SearchIndexService {
     }
 
     public List<SearchIndex> getAllIndexes() {
-        List<SearchIndex> indexList = new ArrayList<>();
-        indexList.addAll(searchIndexRepository.findAll());
-        return indexList;
+        return new ArrayList<>(searchIndexRepository.findAll());
     }
 
     public List<SearchIndex> findIndexByLemma(Lemma lemma) {

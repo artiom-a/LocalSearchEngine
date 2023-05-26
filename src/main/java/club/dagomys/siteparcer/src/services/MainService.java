@@ -19,19 +19,20 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 public class MainService {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
-    AtomicBoolean isIndexing = new AtomicBoolean();
-
-
+    private final AtomicBoolean isIndexing = new AtomicBoolean();
+    private final List<SiteParserRunner> runList = new ArrayList<>();
+    private List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
     @Autowired
     private FieldService fieldService;
 
@@ -63,12 +64,13 @@ public class MainService {
                 siteService.getAllSites().forEach(s -> {
                     if (s.getStatus() != SiteStatus.INDEXING) {
                         isIndexing.set(true);
-                        asyncService.submit(new SiteParserRunner(s, this));
+                        runList.add(new SiteParserRunner(s, this));
                     } else {
                         isIndexing.set(false);
                         mainLogger.error(s.getUrl() + " is indexing");
                     }
                 });
+                taskListener(runList);
             } else {
                 if (site.getStatus() != SiteStatus.INDEXING) {
                     isIndexing.set(true);
@@ -140,7 +142,32 @@ public class MainService {
         return response;
     }
 
+    private void taskListener(List<SiteParserRunner> runList) {
+        completableFutures = runList.stream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
+        Thread taskListener = new Thread(() -> {
+            while (isIndexing.get()) {
+                boolean isEveryRunnableDone = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[completableFutures.size() - 1])).isDone();
+                if (isEveryRunnableDone) {
+                    mainLogger.info("All tasks is done!");
+                    isIndexing.set(false);
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        taskListener.setName("taskListener");
+        taskListener.start();
+        if (!isIndexing.get()) {
+            taskListener.interrupt();
+        }
+    }
 
+    public Boolean getIsIndexing() {
+        return isIndexing.get();
+    }
 
     public FieldService getFieldService() {
         return fieldService;
