@@ -1,6 +1,5 @@
 package club.dagomys.siteparcer.src.entity;
 
-import antlr.collections.impl.LList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

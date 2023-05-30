@@ -79,7 +79,7 @@ public class SiteParser extends RecursiveTask<Link> {
             Thread.sleep(120);
             Document siteFile = Jsoup
                     .connect(connectedLink.getValue())
-                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                    .userAgent(mainService.getAppConfig().getUserAgent())
                     .referrer("http://www.google.com")
                     .ignoreHttpErrors(false)
                     .get();

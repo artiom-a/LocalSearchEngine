@@ -1,6 +1,7 @@
 package club.dagomys.siteparcer.src.services;
 
 
+import club.dagomys.siteparcer.src.config.AppConfig;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
@@ -56,6 +57,9 @@ public class MainService {
 
     @Autowired
     private ForkJoinPool forkJoinPool;
+
+    @Autowired
+    private AppConfig appConfig;
 
 
     public boolean startIndexingSites(boolean isAllSite, Site site) {
@@ -191,6 +195,10 @@ public class MainService {
 
     public ForkJoinPool getForkJoinPool() {
         return forkJoinPool;
+    }
+
+    public AppConfig getAppConfig(){
+        return appConfig;
     }
 
 }

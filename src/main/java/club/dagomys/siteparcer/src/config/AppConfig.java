@@ -23,6 +23,7 @@ import java.util.Optional;
 public class AppConfig {
     private Logger mainLogger = LogManager.getLogger(AppConfig.class);
     private List<Site> siteList;
+    private String UserAgent;
 
     @Bean
     public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
@@ -38,7 +39,7 @@ public class AppConfig {
                         try {
                             Document siteFile = Jsoup
                                     .connect(site.getUrl())
-                                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                                    .userAgent(UserAgent)
                                     .referrer("http://www.google.com")
                                     .ignoreHttpErrors(true)
                                     .get();

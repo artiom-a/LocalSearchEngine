@@ -47,7 +47,7 @@ private MainService mainService;
 
     @GetMapping(value = {"/new"})
     public String getOldPage(Model model) {
-        return "/frontend/index";
+        return "/frontend";
     }
 
 
