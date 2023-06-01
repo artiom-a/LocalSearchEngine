@@ -27,7 +27,6 @@ public class AppConfig {
 
     @Bean
     public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
-        SiteParser parser = new SiteParser();
         return (String[] args) -> {
             siteList.forEach(site -> {
                 if (site.getUrl().endsWith("/")) {

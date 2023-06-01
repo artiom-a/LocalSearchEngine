@@ -19,12 +19,42 @@ Linkdex is a simple HTML crawler. This crawler is intended to crawl sites from a
 
 ## Tech
 Linkdex uses a number of open source projects to work properly:
-And of course LinkDex itself is open source with a [public repository][dill]
-on GitHub.
-
+- Spring Boot
+- Apache
+- jsoup
+- Apache Lucene
+- Swagger 
+etc.
 ## Installation
 
 Linkdex requires [Java](https://www.java.com/ru/download/ie_manual.jsp?locale=ru) 8+ to run.
+Download and install locally on your computer or create a database on an existing MySQL database server to run the program
+[MySQL](https://dev.mysql.com/downloads/mysql/)
+> Note: In this example, we are using the database name search_engine, username and password skillbox_engine
+> 
+```java 
+spring:
+datasource:
+url: jdbc:mysql://localhost:3306/search_engine
+username: skillbox_engine
+password: skillbox_engine
+```
 
 Install the dependencies and start the server.
+- Make sure to be in the root directory
+- Clean and build the project, run the command:
+```sh
+  mvn install
+```
+- This will generate a jar file with all the dependencies which we will run once it has been created.
+- Move the application.yaml file to the root of the generated .jar file
+- run .jar file with command:
+```sh
+  java -jar [path]/[file.jar]
+```
+Verify the deployment by navigating to your server address in
+your preferred browser.
+```sh
+  http://localhost:8080
+```
 </article>

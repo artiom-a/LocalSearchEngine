@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>club.dagomys.it</groupId>
-    <artifactId>LocalSearchEngine</artifactId>
+    <artifactId>Linkdex</artifactId>
     <version>1.0</version>
 
     <properties>
