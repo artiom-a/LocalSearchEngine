@@ -1,3 +1,5 @@
+server:
+  port: 8080
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/search_engine
@@ -22,21 +24,22 @@ springdoc:
     operationsSorter: method
   writer-with-default-pretty-printer: true
 app-configuration:
+  userAgent: "Mozilla/5.0 (compatible; YandexMetrika/2.0; +http://yandex.com/bots yabs01)"
   siteList:
     - name: ""
-      url: https://maxima.school/
+      url: https://maxima.school
     - name: ""                      # if name is EMPTY AppConfig get title from main page
       url: https://u-house-sochi.ru
     - name: ""
-      url: https://spaodissey.ru/
+      url: https://spaodissey.ru
     - name: ""
       url: https://yandex.ru/pogoda
     - name: ""
-      url: https://disk.yandex.ru/
+      url: https://disk.yandex.ru
     - name: ""
       url: https://dostavka.yandex.ru
     - name: ""
-      url: https://www.svetlovka.ru/
+      url: https://www.svetlovka.ru
     - name: ""
       url: https://andaseat.com
 
