@@ -2,6 +2,8 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.Site;
+import club.dagomys.siteparcer.src.exception.PageIndexingException;
+import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,11 +26,11 @@ public class SiteParser extends RecursiveTask<Link> {
     private MainService mainService;
     private static final Logger mainLogger = LogManager.getLogger(SiteParser.class);
 
-    public SiteParser(Link link) throws IOException {
+    public SiteParser(Link link) throws PageIndexingException {
         this.rootURL = link;
     }
 
-    public SiteParser(Link rootLink, MainService mainService, Site site) throws IOException {
+    public SiteParser(Link rootLink, MainService mainService, Site site) throws SiteIndexingException {
         this.rootURL = rootLink;
         this.mainService = mainService;
         this.site = site;
@@ -56,7 +58,7 @@ public class SiteParser extends RecursiveTask<Link> {
                 mainLogger.info("\t\t" + childTask.compute());
                 childList.add(childTask.join());
             }
-        } catch (IOException e) {
+        } catch (SiteIndexingException e) {
             mainLogger.error(e.getMessage());
         }
         return connLink;

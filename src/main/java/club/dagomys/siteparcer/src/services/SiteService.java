@@ -17,9 +17,6 @@ public class SiteService {
     @Autowired
     private SiteRepository siteRepository;
 
-    @Autowired
-    private PageService pageService;
-
 
     public Site saveSite(Site site) {
         return siteRepository.saveAndFlush(site);
@@ -35,8 +32,8 @@ public class SiteService {
                     s.setStatusTime(site.getStatusTime());
                     s.setRootLink(site.getRootLink());
                     s.setLastError(site.getLastError());
-                    saveSite(s);
-                }, () -> saveSite(site));
+                    siteRepository.save(s);
+                }, () -> siteRepository.save(site));
     }
 
 
@@ -55,10 +52,6 @@ public class SiteService {
 
     public List<Site> getAllSites() {
         return siteRepository.findAll();
-    }
-
-    public List<Page> findPageBySite(Site site) {
-        return pageService.getPagesBySite(site);
     }
 
     public void deleteSite(Site site) {

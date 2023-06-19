@@ -38,7 +38,7 @@ public class IndexingController {
     @GetMapping(value = {"/startIndexing"})
     public String startIndexing(Model model){
         mainService.startIndexingSites(true, null);
-        return "redirect:/sites";
+        return "redirect:/frontend/sites";
     }
 
     @GetMapping(value = {"/stopIndexing"})
@@ -50,7 +50,7 @@ public class IndexingController {
 
     @GetMapping(value = "/addUrl")
     public String getAddUrlPage(Model model, @ModelAttribute("URL") URLRequest URL) {
-        return "add_url";
+        return "/frontend/add_url";
     }
 
     @PostMapping("/addUrl")
@@ -63,10 +63,10 @@ public class IndexingController {
                 newSite.setUrl(newSite.getUrl().concat("/"));
             }
             siteService.saveSite(newSite);
-            return "redirect:/sites";
+            return "redirect:/frontend/sites";
         } else {
             mainLogger.info(errors.getAllErrors());
-            return "add_url";
+            return "/frontend/add_url";
         }
     }
 
@@ -74,13 +74,13 @@ public class IndexingController {
     public String deleteSite(@PathVariable("id") int id) {
         Site findSite = siteService.getSite(id);
         siteService.deleteSite(findSite);
-        return "redirect:/sites";
+        return "redirect:/frontend/sites";
     }
 
     @GetMapping("/sites/{id}")
     public String getSite(@PathVariable(value = "id") Integer id) throws ExecutionException, InterruptedException {
         Site findSite = siteService.getSite(id);
         mainService.startIndexingSites(false, findSite);
-        return "redirect:/sites";
+        return "redirect:/frontend/sites";
     }
 }

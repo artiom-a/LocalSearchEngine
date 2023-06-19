@@ -1,5 +1,6 @@
 package club.dagomys.siteparcer.src.services;
 
+import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.*;
 import org.apache.logging.log4j.LogManager;
@@ -49,12 +50,12 @@ public class SiteParserRunner implements Runnable {
         while (isRunning) {
             try {
                 Link siteLinks = getSiteLinks();
-                insertToDatabase(siteLinks);
+                saveToDatabase(siteLinks);
                 Map<String, Integer> lemmaFrequencyMap = countLemmaFrequency();
                 saveLemmaToDatabase(lemmaFrequencyMap);
 
                 createSearchSiteIndexes();
-            } catch (Exception ex) {
+            } catch (SiteIndexingException ex) {
                 doStop();
                 site.setStatus(SiteStatus.FAILED);
                 site.setLastError(ex.getMessage());
@@ -186,7 +187,7 @@ public class SiteParserRunner implements Runnable {
     }
 
 
-    private Link getSiteLinks() throws IOException {
+    private Link getSiteLinks() throws SiteIndexingException {
         Link rootLink = new Link(this.site.getUrl());
         mainService.getSiteService().saveSite(this.site);
         RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, this.site);
@@ -194,10 +195,10 @@ public class SiteParserRunner implements Runnable {
     }
 
 
-    private CompletableFuture<Page> insertToDatabase(Link link) {
+    private void saveToDatabase(Link link) {
         Page root = new Page(link);
-        link.getChildren().forEach(this::insertToDatabase);
-        return CompletableFuture.completedFuture(mainService.getPageService().saveOrUpdate(root));
+        link.getChildren().forEach(this::saveToDatabase);
+        mainService.getPageService().saveOrUpdate(root);
     }
 
     public synchronized void doStop() {

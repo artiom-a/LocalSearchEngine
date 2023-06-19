@@ -39,7 +39,7 @@ public class PageService {
         if (findPage.isEmpty()) {
             mainLogger.info("saving page " + page);
             page.setSite(page.getSite());
-            return savePage(page);
+            return pageRepository.saveAndFlush(page);
         } else {
             Page p = findPage.get();
             p.setLink(page.getLink());
@@ -48,12 +48,12 @@ public class PageService {
             p.setStatusCode(page.getStatusCode());
             p.setRelPath(page.getRelPath());
             mainLogger.info("update page " + p);
-            return savePage(p);
+            return pageRepository.saveAndFlush(p);
         }
     }
 
     public Page getPageById(Integer id) {
-        return getAllPages().stream().filter(page -> page.getId() == id).findFirst().orElseThrow(NoSuchElementException::new);
+        return pageRepository.findAll().stream().filter(page -> Objects.equals(page.getId(), id)).findFirst().orElseThrow(NoSuchElementException::new);
     }
 
     public void deletePage(Page page) {
@@ -69,7 +69,7 @@ public class PageService {
         if (findPage.isPresent()) {
             return findPage.get();
         } else {
-            mainLogger.error(new Exception("page not found ex!!!"));
+            mainLogger.error(new Exception("page not found exception!!!"));
             return null;
         }
     }

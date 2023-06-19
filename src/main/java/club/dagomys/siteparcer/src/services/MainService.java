@@ -14,10 +14,13 @@ import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,6 +89,8 @@ public class MainService {
             }
             return isIndexing.get();
         } catch (Exception e) {
+            site.setLastError(e.getMessage());
+            siteService.saveOrUpdate(site);
             mainLogger.error("Ошибка индексации " + e);
             isIndexing.set(false);
             return isIndexing.get();
@@ -201,4 +206,36 @@ public class MainService {
         return appConfig;
     }
 
+    @Bean
+    public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
+        return (String[] args) -> {
+            appConfig.getSiteList().forEach(site -> {
+                if (site.getUrl().endsWith("/")) {
+                    site.setUrl(site.getUrl().strip().replaceFirst(".$",""));
+                }
+                Optional<Site> findSite = siteService.getSite(site.getUrl());
+                if (findSite.isEmpty()) {
+                    if (site.getName().isEmpty()) {
+                        try {
+                            Document siteFile = Jsoup
+                                    .connect(site.getUrl())
+                                    .userAgent(appConfig.getUserAgent())
+                                    .referrer("http://www.google.com")
+                                    .ignoreHttpErrors(true)
+                                    .get();
+                            site.setName(siteFile.title());
+                        } catch (IOException e) {
+                            site.setLastError("Site is not found");
+                            mainLogger.error(site.getUrl() + " " + e.getMessage());
+                        }
+                        siteService.saveOrUpdate(site);
+                    } else {
+                        siteService.saveSite(site);
+                    }
+                } else {
+                    siteService.saveOrUpdate(findSite.get());
+                }
+            });
+        };
+    }
 }

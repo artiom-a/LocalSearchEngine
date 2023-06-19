@@ -17,7 +17,7 @@ import java.util.*;
 public class FieldService {
     @Autowired
     private FieldRepository fieldRepository;
-    private Logger mainLogger = LogManager.getLogger(FieldService.class);
+    private final Logger mainLogger = LogManager.getLogger(FieldService.class);
 
     public List<Field> getAllFields() {
         return new ArrayList<>(fieldRepository.findAll());
@@ -28,7 +28,7 @@ public class FieldService {
     }
 
     public Field getFieldByName(FieldSelector selector) {
-        return getAllFields().stream().filter(field -> field.getName().equalsIgnoreCase(selector.name())).findFirst().orElseThrow(NoSuchElementException::new);
+        return fieldRepository.findAll().stream().filter(field -> field.getName().equalsIgnoreCase(selector.name())).findFirst().orElseThrow(NoSuchElementException::new);
     }
 
     /**
@@ -40,12 +40,12 @@ public class FieldService {
         return (String[] args) -> {
             Field title = new Field("title", FieldSelector.TITLE, 1f);
             Field body = new Field("body", FieldSelector.BODY, 0.8f);
-            if (this.getAllFields().size() < 2) {
-                this.saveField(title);
-                this.saveField(body);
+            if (this.fieldRepository.findAll().size() < 2) {
+                this.fieldRepository.save(title);
+                this.fieldRepository.save(body);
             } else {
                 mainLogger.info("Данные уже добавлены ранее");
-                fieldService.getAllFields().forEach(field -> mainLogger.info(field));
+                fieldRepository.findAll().forEach(mainLogger::info);
             }
         };
     }

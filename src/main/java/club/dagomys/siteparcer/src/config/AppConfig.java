@@ -25,36 +25,4 @@ public class AppConfig {
     private List<Site> siteList;
     private String UserAgent;
 
-    @Bean
-    public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
-        return (String[] args) -> {
-            siteList.forEach(site -> {
-                if (site.getUrl().endsWith("/")) {
-                    site.setUrl(site.getUrl().strip().replaceFirst(".$",""));
-                }
-                Optional<Site> findSite = siteService.getSite(site.getUrl());
-                if (findSite.isEmpty()) {
-                    if (site.getName().isEmpty()) {
-                        try {
-                            Document siteFile = Jsoup
-                                    .connect(site.getUrl())
-                                    .userAgent(UserAgent)
-                                    .referrer("http://www.google.com")
-                                    .ignoreHttpErrors(true)
-                                    .get();
-                            site.setName(siteFile.title());
-                        } catch (IOException  e) {
-                            site.setLastError("Site is not found");
-                            mainLogger.error(site.getUrl() + " " + e.getMessage());
-                        }
-                        siteService.saveOrUpdate(site);
-                    } else {
-                        siteService.saveSite(site);
-                    }
-                } else {
-                    siteService.saveOrUpdate(findSite.get());
-                }
-            });
-        };
-    }
 }

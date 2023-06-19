@@ -123,10 +123,10 @@ public class LemmaCounter {
 
 
     private String getLanguage(String word) {
-        for (int i = 0; i < word.length(); i++) {
-            if (Character.UnicodeBlock.of(word.charAt(i)).equals(Character.UnicodeBlock.CYRILLIC) | word.matches(russian.pattern())) {
+        for (char c : word.toCharArray()) {
+            if (Character.UnicodeBlock.of(c).equals(Character.UnicodeBlock.CYRILLIC) | word.matches(russian.pattern())) {
                 return "RU";
-            } else if (Character.UnicodeBlock.of(word.charAt(i)).equals(Character.UnicodeBlock.BASIC_LATIN) | word.matches(english.pattern())) {
+            } else if (Character.UnicodeBlock.of(c).equals(Character.UnicodeBlock.BASIC_LATIN) | word.matches(english.pattern())) {
                 return "EN";
             } else {
                 return new Exception("Can't check language").getMessage();

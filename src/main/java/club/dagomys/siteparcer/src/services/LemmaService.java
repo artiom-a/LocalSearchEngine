@@ -34,18 +34,20 @@ public class LemmaService {
         return lemmaRepository.saveAndFlush(lemma);
     }
 
-    //доработать метод. Замедляет выполнение при обновлении лемм
+    //TODO: 14.06.2022{
+    // доработать метод. Замедляет выполнение при обновлении лемм
+    // }
     public Lemma saveOrUpdate(Lemma lemma) {
         Optional<Lemma> findLemma = lemmaRepository.findByLemmaAndSite(lemma.getLemma(), lemma.getSite());
         if (findLemma.isEmpty()) {
             mainLogger.info("saving lemma " + lemma);
-            return saveLemma(lemma);
+            return lemmaRepository.save(lemma);
         } else {
             Lemma l = findLemma.get();
             l.setLemma(lemma.getLemma());
             l.setFrequency(lemma.getFrequency());
             mainLogger.info("update lemma " + l);
-            return saveLemma(l);
+            return lemmaRepository.save(l);
         }
     }
 

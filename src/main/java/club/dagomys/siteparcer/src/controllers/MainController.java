@@ -47,11 +47,8 @@ private MainService mainService;
 
     @GetMapping(value = {"/new"})
     public String getOldPage(Model model) {
-        return "/frontend";
+        return "/frontend/index";
     }
-
-
-
 
     @GetMapping(value = {"/test"})
     public ResponseEntity<String> testMethod(Model model)
@@ -61,28 +58,25 @@ private MainService mainService;
 
     @GetMapping(value = {"/{id}"})
     public String getPageById(@ModelAttribute("id") Integer id, Model model) {
-        Page findPage = pageService.getPageById(id);
-//        Map<String, Lemma> lemmas = mainService.countLemmasOnPage(findPage);
-//        model.addAttribute("lemmas", lemmas);
-        model.addAttribute("findPage", findPage);
+        model.addAttribute("findPage", pageService.getPageById(id));
         return "update_page";
     }
 
     @GetMapping(value = {"/lemmas"})
     public String getAllLemma(Model model) {
         model.addAttribute("lemmas", lemmaService.getAllLemma());
-        return "lemmas";
+        return "/frontend/lemmas";
     }
 
     @GetMapping(value = {"/sites"})
     public String getAllSites(Model model) {
         model.addAttribute("sites", siteService.getAllSites());
-        return "sites";
+        return "/frontend/sites";
     }
 
     @GetMapping(value = {"/deleteAllLemma"})
     public String deleteAllLemma(Model model) {
         lemmaService.deleteAllLemma();
-        return "redirect:/lemmas";
+        return "redirect:/frontend/lemmas";
     }
 }
