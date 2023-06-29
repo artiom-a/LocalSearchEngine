@@ -3,12 +3,7 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.config.AppConfig;
 import club.dagomys.siteparcer.src.entity.*;
-import club.dagomys.siteparcer.src.entity.request.URLRequest;
-import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
-import club.dagomys.siteparcer.src.entity.response.Detail;
-import club.dagomys.siteparcer.src.entity.response.Statistic;
-import club.dagomys.siteparcer.src.entity.response.Total;
-import club.dagomys.siteparcer.src.exception.PageIndexingException;
+import club.dagomys.siteparcer.src.entity.response.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -23,13 +18,11 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 @Service
 public class MainService {
@@ -65,15 +58,19 @@ public class MainService {
     private AppConfig appConfig;
 
 
-    public boolean startIndexingSites(boolean isAllSite, Site site) {
+    public Response startIndexingSites(boolean isAllSite, Site site) {
+        Response response = new Response();
         try {
             if (isAllSite) {
                 siteService.getAllSites().forEach(s -> {
                     if (s.getStatus() != SiteStatus.INDEXING) {
                         isIndexing.set(true);
+                        response.setResult(true);
                         runList.add(new SiteParserRunner(s, this));
                     } else {
                         isIndexing.set(false);
+                        response.setResult(false);
+                        response.setError(s.getUrl()+"is indexing");
                         mainLogger.error(s.getUrl() + " is indexing");
                     }
                 });
@@ -81,28 +78,34 @@ public class MainService {
             } else {
                 if (site.getStatus() != SiteStatus.INDEXING) {
                     isIndexing.set(true);
+                    response.setResult(true);
                     asyncService.submit(new SiteParserRunner(site, this));
                 } else {
-                    isIndexing.set(false);
+                    response.setResult(false);
+                    response.setError(site.getUrl() + " status is " + site.getStatus());
                     mainLogger.info(site.getUrl() + " status is " + site.getStatus());
                 }
             }
-            return isIndexing.get();
+            return response;
         } catch (Exception e) {
             site.setLastError(e.getMessage());
             siteService.saveOrUpdate(site);
             mainLogger.error("Ошибка индексации " + e);
             isIndexing.set(false);
-            return isIndexing.get();
+            response.setResult(false);
+            response.setError(site.getUrl() + " status is " + site.getStatus());
+            return response;
         }
     }
 
-    public boolean stopIndexingSites() {
+    public Response stopIndexingSites() {
+        Response response = new Response();
         try {
             if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS)) {
                 asyncService.getThreadPoolExecutor().shutdownNow();
                 forkJoinPool.shutdownNow();
                 if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS))
+                    response.setError("Pool did not terminate");
                     mainLogger.error("Pool did not terminate");
             }
             siteService.getAllSites().forEach(site -> {
@@ -114,7 +117,8 @@ public class MainService {
             mainLogger.error(ie.getMessage());
         }
         isIndexing.set(false);
-        return isIndexing.get();
+        response.setResult(false);
+        return response;
     }
 
     public DashboardResponse getStatistic() {
@@ -174,7 +178,7 @@ public class MainService {
         }
     }
 
-    public Boolean getIsIndexing() {
+    public Boolean isIndexing() {
         return isIndexing.get();
     }
 

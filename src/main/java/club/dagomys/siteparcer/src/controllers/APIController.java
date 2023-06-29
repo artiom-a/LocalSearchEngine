@@ -32,21 +32,13 @@ public class APIController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity<Response> startIndexing() throws InterruptedException {
-        Response response = new Response();
-        response.setResult(mainService.startIndexingSites(true, null));
-        if (mainService.getIsIndexing()) {
-            response.setError("Индексация уже запущена");
-        }
+        Response response = mainService.startIndexingSites(true, null);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<Response> stopIndexing() {
-        Response response = new Response();
-        response.setResult(mainService.stopIndexingSites());
-        if (!mainService.getIsIndexing()) {
-            response.setError("Индексация не запущена");
-        }
+        Response response = mainService.stopIndexingSites();
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -70,16 +62,7 @@ public class APIController {
 
     @PostMapping("/indexPage")
     public ResponseEntity<Response> indexPage(@Valid @ModelAttribute("url") URLRequest URL, Errors errors, Model model) {
-        Response response = new Response();
-        if (!errors.hasErrors()) {
-            response.setResult(mainService.getPageService().reindexPage(URL));
-            if (!response.getResult()) {
-                response.setError("Данная страница находится за пределами сайтов указанных в конфигурационном файле");
-            }
-        } else {
-            response.setError(Objects.requireNonNull(errors.getFieldError()).getDefaultMessage());
-            mainLogger.error(errors.getAllErrors());
-        }
+        Response response = mainService.getPageService().reindexPage(URL, errors);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
