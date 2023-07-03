@@ -9,14 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
 @Controller
+@RequestMapping("/new")
 public class SearchController {
     private final Logger mainLogger = LogManager.getLogger(SearchController.class);
     private SearchResponse searchResponse = new SearchResponse();
@@ -25,10 +23,10 @@ public class SearchController {
     @Autowired
     private SearchService searchService;
 
-    @GetMapping("/search")
+    @GetMapping("/new/search")
     public String getSearchPage(Model model, @ModelAttribute("searchRequest") SearchRequest searchRequest) {
         model.addAttribute("indexList", searchResponse);
-        return "search";
+        return "/frontend/search";
     }
 
     @PostMapping("/search")
@@ -37,10 +35,10 @@ public class SearchController {
     {
         if (!errors.hasErrors()) {
             searchResponse = searchService.search(searchRequest, site);
-            return "redirect:/search";
+            return "redirect:/new/search";
         } else {
             mainLogger.info(errors.getAllErrors());
-            return "search";
+            return "/new/search";
         }
 
     }

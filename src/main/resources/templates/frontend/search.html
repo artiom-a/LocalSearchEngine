@@ -5,7 +5,7 @@
 <div class="container">
     <h1>WEB search</h1>
     <hr>
-    <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Back to main</a>
+    <a th:href="@{/new}" class="btn btn-primary btn-sm mb-3"> Back to main</a>
     <form action="#" th:action="@{/search}" method="POST" th:object="${searchRequest}">
         <input type="text" th:field="*{searchLine}" placeholder="введите строку поиска..." class="form-control mb-4">
         <div th:each="err : ${#fields.errors('searchLine')}">

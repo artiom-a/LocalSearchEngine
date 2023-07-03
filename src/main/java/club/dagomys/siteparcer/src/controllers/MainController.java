@@ -50,31 +50,25 @@ private MainService mainService;
         return "/frontend/index";
     }
 
-    @GetMapping(value = {"/test"})
-    public ResponseEntity<String> testMethod(Model model)
-    {
-        return new ResponseEntity<String>("Тест", HttpStatus.OK);
-    }
-
-    @GetMapping(value = {"/{id}"})
+    @GetMapping(value = {"/new/{id}"})
     public String getPageById(@ModelAttribute("id") Integer id, Model model) {
         model.addAttribute("findPage", pageService.getPageById(id));
-        return "update_page";
+        return "/frontend/update_page";
     }
 
-    @GetMapping(value = {"/lemmas"})
+    @GetMapping(value = {"/new/lemmas"})
     public String getAllLemma(Model model) {
         model.addAttribute("lemmas", lemmaService.getAllLemma());
-        return "/frontend/lemmas";
+        return "/frontend//lemmas";
     }
 
-    @GetMapping(value = {"/sites"})
+    @GetMapping(value = {"/new/sites"})
     public String getAllSites(Model model) {
         model.addAttribute("sites", siteService.getAllSites());
         return "/frontend/sites";
     }
 
-    @GetMapping(value = {"/deleteAllLemma"})
+    @GetMapping(value = {"/new/deleteAllLemma"})
     public String deleteAllLemma(Model model) {
         lemmaService.deleteAllLemma();
         return "redirect:/frontend/lemmas";
