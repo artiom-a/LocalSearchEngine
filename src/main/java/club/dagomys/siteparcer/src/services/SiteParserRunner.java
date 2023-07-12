@@ -35,12 +35,12 @@ public class SiteParserRunner implements Runnable {
     public SiteParserRunner(Site site, MainService mainService) {
         this.mainService = mainService;
         this.site = site;
-        this.isRunning = true;
     }
 
 
     @Override
     public void run() {
+        this.isRunning = true;
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(LocalDateTime.now());
         mainService.getSiteService().saveOrUpdate(this.site);
@@ -62,7 +62,7 @@ public class SiteParserRunner implements Runnable {
                 mainService.getSiteService().saveOrUpdate(site);
                 mainLogger.error(ex.getMessage());
             }
-            doStop();
+            this.isRunning = false;
         }
 
         Calendar finishDate = Calendar.getInstance();

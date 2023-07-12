@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ExecutionException;
 
 @Controller
+@RequestMapping("/new")
 public class IndexingController {
     private final Logger mainLogger = LogManager.getLogger(IndexingController.class);
 
@@ -38,22 +39,22 @@ public class IndexingController {
     @GetMapping(value = {"/startIndexing"})
     public String startIndexing(Model model){
         mainService.startIndexingSites(true, null);
-        return "redirect:/frontend/sites";
+        return "redirect:/new/sites";
     }
 
     @GetMapping(value = {"/stopIndexing"})
     public String stopIndexing() {
         mainService.stopIndexingSites();
-        return "redirect:/";
+        return "redirect:/new";
     }
 
 
-    @GetMapping(value = "/addUrl")
+    @GetMapping(value = "/new/addUrl")
     public String getAddUrlPage(Model model, @ModelAttribute("URL") URLRequest URL) {
         return "/frontend/add_url";
     }
 
-    @PostMapping("/addUrl")
+    @PostMapping("/new/addUrl")
     public String addUrl(@Valid @ModelAttribute("URL") URLRequest URL, Errors errors, Model model) {
         if (!errors.hasErrors()) {
             mainLogger.info(URL);
@@ -63,10 +64,10 @@ public class IndexingController {
                 newSite.setUrl(newSite.getUrl().concat("/"));
             }
             siteService.saveSite(newSite);
-            return "redirect:/frontend/sites";
+            return "redirect:/new/sites";
         } else {
             mainLogger.info(errors.getAllErrors());
-            return "/frontend/add_url";
+            return "/new/add_url";
         }
     }
 
@@ -74,13 +75,13 @@ public class IndexingController {
     public String deleteSite(@PathVariable("id") int id) {
         Site findSite = siteService.getSite(id);
         siteService.deleteSite(findSite);
-        return "redirect:/frontend/sites";
+        return "redirect:/new/sites";
     }
 
-    @GetMapping("/sites/{id}")
+    @GetMapping("/new/sites/{id}")
     public String getSite(@PathVariable(value = "id") Integer id) throws ExecutionException, InterruptedException {
         Site findSite = siteService.getSite(id);
         mainService.startIndexingSites(false, findSite);
-        return "redirect:/frontend/sites";
+        return "redirect:/new/sites";
     }
 }

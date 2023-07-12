@@ -34,8 +34,6 @@ public class SiteParser extends RecursiveTask<Link> {
         this.rootURL = rootLink;
         this.mainService = mainService;
         this.site = site;
-//        mainLogger.info(site);
-//        rootURL.setSite());
     }
 
 

@@ -123,6 +123,7 @@ public class LemmaCounter {
 
 
     private String getLanguage(String word) {
+
         if (word.matches(russian.pattern())) {
             return "RU";
         } else if (word.matches(english.pattern())) {

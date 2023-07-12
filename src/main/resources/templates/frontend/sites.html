@@ -8,8 +8,8 @@
 <div class="container my-2">
     <h1>All sites</h1>
 
-    <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Home</a>
-    <a th:href="@{/addUrl}" class="btn btn-primary btn-sm mb-3"> Add URL </a>
+    <a th:href="@{/new}" class="btn btn-primary btn-sm mb-3"> Home</a>
+    <a th:href="@{/new/addUrl}" class="btn btn-primary btn-sm mb-3"> Add URL </a>
     <table border="1" class="table table-striped table-responsive-md">
         <thead>
         <tr>
@@ -29,9 +29,9 @@
             <td th:text="${site.status}"></td>
             <td th:text="${site.statusTime}"></td>
             <td th:text="${site.lastError}"></td>
-            <td><a th:href="@{/sites/{id}(id=${site.id})}" class="btn btn-success">Start indexing</a>
+            <td><a th:href="@{/new/sites/{id}(id=${site.id})}" class="btn btn-success">Start indexing</a>
                 <div>
-                    <form th:action="@{/sites/{id}(id=${site.id})}" th:method="delete">
+                    <form th:action="@{/new/sites/{id}(id=${site.id})}" th:method="delete">
                         <button class="btn btn-danger" th:type="submit">Delete</button>
                     </form>
                 </div>

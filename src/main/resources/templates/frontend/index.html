@@ -8,12 +8,12 @@
 <div class="container my-2">
     <h1>All pages</h1>
 
-    <a th:href="@{/}" class="btn btn-primary btn-sm mb-3"> Home</a>
+    <a th:href="@{/new}" class="btn btn-primary btn-sm mb-3"> Home</a>
     <a th:href="@{/startIndexing}" class="btn btn-primary btn-sm mb-3"> Start indexing all sites </a>
     <a th:href="@{/stopIndexing}" class="btn btn-primary btn-sm mb-3"> STOP indexing</a>
-    <a th:href="@{/lemmas}" class="btn btn-primary btn-sm mb-3"> Show all lemma</a>
-    <a th:href="@{/search}" class="btn btn-primary btn-sm mb-3"> Search system</a>
-    <a th:href="@{/sites}" class="btn btn-primary btn-sm mb-3"> Sites</a>
+    <a th:href="@{/new/lemmas}" class="btn btn-primary btn-sm mb-3"> Show all lemma</a>
+    <a th:href="@{/new/search}" class="btn btn-primary btn-sm mb-3"> Search system</a>
+    <a th:href="@{/new/sites}" class="btn btn-primary btn-sm mb-3"> Sites</a>
     <div class="accordion" id="accordionExample">
         <div th:each="site: ${sites}" class="accordion-item">
             <h2 class="accordion-header" th:id="'heading_'+${site.id}">
@@ -36,7 +36,7 @@
                             <td th:text="${stats.index + 1}"></td>
                             <td th:text="${page.relPath}"></td>
                             <td th:text="${page.statusCode}"></td>
-                            <td><a th:href="@{/{id}(id=${page.id})}" class="btn btn-primary">Start indexing page</a>
+                            <td><a th:href="@{/new/{id}(id=${page.id})}" class="btn btn-primary">Start indexing page</a>
                             </td>
                         </tr>
                         </tbody>
