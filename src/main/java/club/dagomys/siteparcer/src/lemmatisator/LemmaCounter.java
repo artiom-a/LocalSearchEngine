@@ -50,7 +50,7 @@ public class LemmaCounter {
                 .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph)).toList();
         wordsMap = morphList.stream()
                 .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
-                .collect(Collectors.toMap(l -> l.get(0).replace('ё','е'), v -> 1, Integer::sum));
+                .collect(Collectors.toMap(l -> l.get(0).replace('ё', 'е'), v -> 1, Integer::sum));
         wordsMap.keySet().removeIf(l -> l.matches("\\b([A-z]{1,2})\\b") || l.matches("\\b([А-яё]{1,2})\\b"));//remove short 1 till 2 chars symbols
         return wordsMap;
     }
@@ -123,16 +123,13 @@ public class LemmaCounter {
 
 
     private String getLanguage(String word) {
-        for (char c : word.toCharArray()) {
-            if (Character.UnicodeBlock.of(c).equals(Character.UnicodeBlock.CYRILLIC) | word.matches(russian.pattern())) {
-                return "RU";
-            } else if (Character.UnicodeBlock.of(c).equals(Character.UnicodeBlock.BASIC_LATIN) | word.matches(english.pattern())) {
-                return "EN";
-            } else {
-                return new Exception("Can't check language").getMessage();
-            }
+        if (word.matches(russian.pattern())) {
+            return "RU";
+        } else if (word.matches(english.pattern())) {
+            return "EN";
+        } else {
+            return new Exception("Can't check language").getMessage();
         }
-        return null;
     }
 
 }
