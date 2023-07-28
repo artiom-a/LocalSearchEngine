@@ -87,7 +87,7 @@ public class PageService {
         try {
             for (Site s : siteList) {
                 if (s.getStatus() == SiteStatus.INDEXING) {
-                    throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
+                   throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
                 }
                 if (rootLink.getValue().contains(s.getUrl())) {
                     site = Optional.of(s);
@@ -126,6 +126,8 @@ public class PageService {
             response.setResult(false);
             response.setError(e.getMessage());
             mainLogger.error(e.getMessage());
+        } catch (PageIndexingException e) {
+            mainLogger.info(e.getMessage());
         }
         return response;
     }

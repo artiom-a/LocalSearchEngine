@@ -31,7 +31,7 @@ public class SearchData implements Comparable<SearchData> {
     @Override
     public int compareTo(@NotNull SearchData o) {
         int res = o.relevance.compareTo(this.relevance);
-        if (res == 0) {
+        if (res == 0 & (o.URI != null & this.URI != null)) {
             res = o.URI.compareTo(this.URI);
         }
         return res;

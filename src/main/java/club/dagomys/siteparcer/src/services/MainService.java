@@ -98,26 +98,41 @@ public class MainService {
         }
     }
 
+    private Response getSiteIndexingResponse(Site site) {
+        Response siteResponse = new Response();
+        if (site.getStatus() != SiteStatus.INDEXING) {
+            isIndexing.set(true);
+            siteResponse.setResult(true);
+            asyncService.submit(new SiteParserRunner(site, this));
+        } else {
+            isIndexing.set(false);
+            siteResponse.setResult(isIndexing.get());
+            siteResponse.setError(site.getUrl() + " is indexing");
+            mainLogger.error(site.getUrl() + " is indexing");
+        }
+        return siteResponse;
+    }
+
     public Response stopIndexingSites() {
         Response response = new Response();
+//        completableFutures = runList.stream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
         try {
-            if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS)) {
-                asyncService.getThreadPoolExecutor().shutdownNow();
-                forkJoinPool.shutdownNow();
-                if (!asyncService.getThreadPoolExecutor().awaitTermination(1, TimeUnit.SECONDS))
-                    response.setError("Pool did not terminate");
-                    mainLogger.error("Pool did not terminate");
-            }
-            siteService.getAllSites().forEach(site -> {
+            runList.parallelStream().forEach(SiteParserRunner::doStop);
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        siteService.getAllSites().forEach(site -> {
+            if (site.getStatus() != SiteStatus.INDEXED) {
                 site.setStatusTime(LocalDateTime.now());
                 site.setStatus(SiteStatus.FAILED);
                 siteService.saveOrUpdate(site);
-            });
-        } catch (InterruptedException ie) {
-            mainLogger.error(ie.getMessage());
-        }
+            }
+        });
+
         isIndexing.set(false);
         response.setResult(false);
+        response.setError("parsing is stopped");
         return response;
     }
 
@@ -206,7 +221,7 @@ public class MainService {
         return forkJoinPool;
     }
 
-    public AppConfig getAppConfig(){
+    public AppConfig getAppConfig() {
         return appConfig;
     }
 
@@ -215,7 +230,7 @@ public class MainService {
         return (String[] args) -> {
             appConfig.getSiteList().forEach(site -> {
                 if (site.getUrl().endsWith("/")) {
-                    site.setUrl(site.getUrl().strip().replaceFirst(".$",""));
+                    site.setUrl(site.getUrl().strip().replaceFirst(".$", ""));
                 }
                 Optional<Site> findSite = siteService.getSite(site.getUrl());
                 if (findSite.isEmpty()) {

@@ -43,7 +43,6 @@ public class SiteParser extends RecursiveTask<Link> {
     @Override
     protected Link compute() {
         List<SiteParser> childParserList = new ArrayList<>();
-        List<Link> childList = new ArrayList<>();
         Link connLink = null;
         try {
             connLink = connectToLink(rootURL);
@@ -52,9 +51,12 @@ public class SiteParser extends RecursiveTask<Link> {
                 childParser.fork();
                 childParserList.add(childParser);
             }
-            for (SiteParser childTask : childParserList) {
-                mainLogger.info("\t\t" + childTask.compute());
-                childList.add(childTask.join());
+            if (this.mainService.isIndexing()) {
+                for (SiteParser childTask : childParserList) {
+                    childTask.compute();
+//                    mainLogger.info("\t\t" + );
+                    childTask.join();
+                }
             }
         } catch (SiteIndexingException e) {
             mainLogger.error(e.getMessage());

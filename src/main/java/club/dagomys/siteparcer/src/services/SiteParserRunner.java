@@ -51,70 +51,81 @@ public class SiteParserRunner implements Runnable {
             try {
                 Link siteLinks = getSiteLinks();
                 saveToDatabase(siteLinks);
-                Map<String, Integer> lemmaFrequencyMap = countLemmaFrequency();
-                saveLemmaToDatabase(lemmaFrequencyMap);
-
+                countLemmaFrequency();
                 createSearchSiteIndexes();
-            } catch (SiteIndexingException ex) {
-                doStop();
+                this.isRunning = false;
+                Calendar finishDate = Calendar.getInstance();
+                mainLogger.warn("finish time " + dateFormat.format(finishDate.getTime()));
+                Duration duration = Duration.between(startTime.toInstant(), finishDate.toInstant());
+                mainLogger.info("Duration " + duration.toString());
+                site.setStatusTime(LocalDateTime.now());
+                site.setStatus(SiteStatus.INDEXED);
+                mainService.getSiteService().saveOrUpdate(this.site);
+            } catch (SiteIndexingException e) {
+                Thread.currentThread().interrupt();
+                this.isRunning = false;
                 site.setStatus(SiteStatus.FAILED);
-                site.setLastError(ex.getMessage());
+                site.setLastError(e.getMessage());
                 mainService.getSiteService().saveOrUpdate(site);
-                mainLogger.error(ex.getMessage());
+                mainLogger.error(e.getMessage() + " " + "Thread was interrupted, Failed to complete operation");
             }
-            this.isRunning = false;
+
         }
 
-        Calendar finishDate = Calendar.getInstance();
-        mainLogger.warn("finish time " + dateFormat.format(finishDate.getTime()));
-        Duration duration = Duration.between(startTime.toInstant(), finishDate.toInstant());
-        mainLogger.info("Duration " + duration.toString());
-        site.setStatusTime(LocalDateTime.now());
-        site.setStatus(SiteStatus.INDEXED);
-        mainService.getSiteService().saveOrUpdate(this.site);
+
     }
 
 
-    private Map<String, Integer> countLemmaFrequency() {
+    private Map<String, Integer> countLemmaFrequency() throws SiteIndexingException {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
         for (Page page : mainService.getPageService().getPagesBySite(this.site)) {
-            mainLogger.info("Start parsing \t" + page.getRelPath());
             Map<String, Lemma> indexedPageMap = countLemmasOnPage(page);
-            indexedPageMap.forEach((key, value) -> {
-                if (indexedPagesLemmas.containsKey(key)) {
-                    indexedPagesLemmas.put(key, indexedPagesLemmas.get(key) + 1);
-                } else {
-                    indexedPagesLemmas.put(key, 1);
-                }
-            });
+            if (mainService.isIndexing()) {
+                mainLogger.info("Start parsing \t" + page.getRelPath());
+                indexedPageMap.forEach((key, value) -> {
+                    if (indexedPagesLemmas.containsKey(key)) {
+                        indexedPagesLemmas.put(key, indexedPagesLemmas.get(key) + 1);
+                    } else {
+                        indexedPagesLemmas.put(key, 1);
+                    }
+                });
+            } else throw new SiteIndexingException("Нахождение частоты лемм на сайте остановлено");
             lemmaCounting(indexedPageMap);
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
+        saveLemmaToDatabase(indexedPagesLemmas);
         return indexedPagesLemmas;
     }
 
-    private CompletableFuture<Iterable<Lemma>> saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
+    private void saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
         Set<Lemma> lemmaList = new TreeSet<>();
         lemmaMap.forEach((key, value) -> {
-            Lemma lemma = new Lemma(key, value);
-            lemma.setSite(site);
-            lemmaList.add(lemma);
+            try {
+                if (mainService.isIndexing()) {
+                    Lemma lemma = new Lemma(key, value);
+                    lemma.setSite(site);
+                    lemmaList.add(lemma);
+                } else throw new SiteIndexingException("Сохранение лемм в БД остановлено для сайта " + site.getUrl());
+            } catch (SiteIndexingException e) {
+                mainLogger.error(e.getMessage());
+            }
         });
         mainService.getLemmaService().deleteAllBySite(site);
-        return CompletableFuture.completedFuture(mainService.getLemmaService().saveAllLemmas(lemmaList));
+        mainService.getLemmaService().saveAllLemmas(lemmaList);
     }
 
-    private Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) {
+    private Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) throws SiteIndexingException{
         Map<String, Lemma> lemmas = new TreeMap<>();
         if (indexingPage.getContent() != null) {
             Document doc = Jsoup.parse(indexingPage.getContent());
             try {
-
-                for (Field field : mainService.getFieldService().getAllFields()) {
-                    LemmaCounter lemmaCounter = new LemmaCounter(doc.getElementsByTag(field.getName()).text());
-                    lemmaCounter.countLemmas().forEach((key, value) -> lemmas.merge(key, new Lemma(key, value), Lemma::sum));
-                }
-            } catch (IncorrectResultSizeDataAccessException | IOException e) {
+                if (mainService.isIndexing()) {
+                    for (Field field : mainService.getFieldService().getAllFields()) {
+                        LemmaCounter lemmaCounter = new LemmaCounter(doc.getElementsByTag(field.getName()).text());
+                        lemmaCounter.countLemmas().forEach((key, value) -> lemmas.merge(key, new Lemma(key, value), Lemma::sum));
+                    }
+                } else throw new SiteIndexingException("Остановка парсинга страницы");
+            } catch (IncorrectResultSizeDataAccessException | IOException | SiteIndexingException e) {
                 System.out.println(e.getMessage());
             }
         } else {
@@ -170,43 +181,58 @@ public class SiteParserRunner implements Runnable {
 
     }
 
-    private void createSearchSiteIndexes() {
+    private void createSearchSiteIndexes() throws SiteIndexingException {
         List<Lemma> lemmas = mainService.getLemmaService().getLemmaList(site).orElseThrow();
         for (Page page : mainService.getPageService().getPagesBySite(this.site)) {
-            long startTime = System.currentTimeMillis();
-            mainLogger.info("Start parsing \t" + this.site.getUrl() + "" + page.getRelPath());
-            Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
-            indexedPageMap.forEach((key, value) -> {
-                Lemma findLemma = lemmas.stream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseThrow();
-                mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
-            });
-            long endTime = System.currentTimeMillis();
-            mainLogger.warn(page.getRelPath() + " indexing is complete");
-            mainLogger.warn("End parsing {} ms \t" + page.getRelPath(), endTime - startTime);
+            if (mainService.isIndexing()) {
+                try {
+                    long startTime = System.currentTimeMillis();
+                    mainLogger.info("Start parsing \t" + this.site.getUrl() + "" + page.getRelPath());
+                    Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
+                    indexedPageMap.forEach((key, value) -> {
+                        Lemma findLemma = lemmas.parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseThrow();
+                        mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
+                    });
+                    long endTime = System.currentTimeMillis();
+                    mainLogger.warn(page.getRelPath() + " indexing is complete");
+                    mainLogger.warn("End parsing {} ms \t" + page.getRelPath(), endTime - startTime);
+                    throw new SiteIndexingException("Индексация остановлена на странице " + page.getRelPath() + " сайт " + page.getSite().getUrl());
+                } catch (SiteIndexingException exception) {
+                    mainLogger.error(exception.getMessage());
+                }
+            }
         }
     }
 
 
     private Link getSiteLinks() throws SiteIndexingException {
-        Link rootLink = new Link(this.site.getUrl());
-        mainService.getSiteService().saveSite(this.site);
-        RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, this.site);
-        return mainService.getForkJoinPool().invoke(forkJoinTask);
+        if (mainService.isIndexing()) {
+            Link rootLink = new Link(this.site.getUrl());
+            mainService.getSiteService().saveSite(this.site);
+            RecursiveTask<Link> forkJoinTask = new SiteParser(rootLink, mainService, this.site);
+            return mainService.getForkJoinPool().invoke(forkJoinTask);
+        } else throw new SiteIndexingException("Парсинг ссылок остановлен " + this.site.getUrl());
     }
 
 
-    private void saveToDatabase(Link link) {
+    private void saveToDatabase(Link link) throws SiteIndexingException {
         Page root = new Page(link);
-        link.getChildren().forEach(this::saveToDatabase);
+
+        link.getChildren().parallelStream().forEach(c -> {
+            if (mainService.isIndexing()) {
+                try {
+                    saveToDatabase(c);
+                } catch (SiteIndexingException e) {
+                    mainLogger.error("Сохранение страницы в базу данных остановлено " + c.getValue());
+                }
+            }
+//                throw new SiteIndexingException("СОхранение объекта Page остановлено")
+        });
         mainService.getPageService().saveOrUpdate(root);
     }
 
-    public synchronized void doStop() {
+    public void doStop() {
         this.isRunning = false;
-    }
-
-    public boolean isRunning() {
-        return isRunning;
     }
 
 }
