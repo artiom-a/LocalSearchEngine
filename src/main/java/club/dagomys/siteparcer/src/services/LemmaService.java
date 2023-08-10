@@ -19,9 +19,6 @@ public class LemmaService {
     @Autowired
     private LemmaRepository lemmaRepository;
 
-    @Autowired
-    private SiteRepository siteRepository;
-
     public List<Lemma> getAllLemma() {
         return new ArrayList<>(lemmaRepository.findAll());
     }

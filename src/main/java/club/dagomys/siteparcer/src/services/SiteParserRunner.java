@@ -62,12 +62,11 @@ public class SiteParserRunner implements Runnable {
                 site.setStatus(SiteStatus.INDEXED);
                 mainService.getSiteService().saveOrUpdate(this.site);
             } catch (SiteIndexingException e) {
-                Thread.currentThread().interrupt();
                 this.isRunning = false;
                 site.setStatus(SiteStatus.FAILED);
                 site.setLastError(e.getMessage());
                 mainService.getSiteService().saveOrUpdate(site);
-                mainLogger.error(e.getMessage() + " " + "Thread was interrupted, Failed to complete operation");
+                mainLogger.error(e.getMessage() + " " + "Поток был прерван пользователем");
             }
 
         }
@@ -76,7 +75,7 @@ public class SiteParserRunner implements Runnable {
     }
 
 
-    private Map<String, Integer> countLemmaFrequency() throws SiteIndexingException {
+    private void countLemmaFrequency() throws SiteIndexingException {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
         for (Page page : mainService.getPageService().getPagesBySite(this.site)) {
             Map<String, Lemma> indexedPageMap = countLemmasOnPage(page);
@@ -94,7 +93,6 @@ public class SiteParserRunner implements Runnable {
             mainLogger.warn("End parsing \t" + page.getRelPath());
         }
         saveLemmaToDatabase(indexedPagesLemmas);
-        return indexedPagesLemmas;
     }
 
     private void saveLemmaToDatabase(Map<String, Integer> lemmaMap) {
@@ -114,7 +112,7 @@ public class SiteParserRunner implements Runnable {
         mainService.getLemmaService().saveAllLemmas(lemmaList);
     }
 
-    private Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) throws SiteIndexingException{
+    private Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) throws SiteIndexingException {
         Map<String, Lemma> lemmas = new TreeMap<>();
         if (indexingPage.getContent() != null) {
             Document doc = Jsoup.parse(indexingPage.getContent());
@@ -125,7 +123,7 @@ public class SiteParserRunner implements Runnable {
                         lemmaCounter.countLemmas().forEach((key, value) -> lemmas.merge(key, new Lemma(key, value), Lemma::sum));
                     }
                 } else throw new SiteIndexingException("Остановка парсинга страницы");
-            } catch (IncorrectResultSizeDataAccessException | IOException | SiteIndexingException e) {
+            } catch (IncorrectResultSizeDataAccessException | IOException e) {
                 System.out.println(e.getMessage());
             }
         } else {
@@ -184,23 +182,22 @@ public class SiteParserRunner implements Runnable {
     private void createSearchSiteIndexes() throws SiteIndexingException {
         List<Lemma> lemmas = mainService.getLemmaService().getLemmaList(site).orElseThrow();
         for (Page page : mainService.getPageService().getPagesBySite(this.site)) {
+            mainService.getSearchIndexService().deleteByPage(page);
+
+            long startTime = System.currentTimeMillis();
+            mainLogger.info("Start parsing \t" + this.site.getUrl() + "" + page.getRelPath());
             if (mainService.isIndexing()) {
-                try {
-                    long startTime = System.currentTimeMillis();
-                    mainLogger.info("Start parsing \t" + this.site.getUrl() + "" + page.getRelPath());
-                    Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
-                    indexedPageMap.forEach((key, value) -> {
-                        Lemma findLemma = lemmas.parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseThrow();
-                        mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
-                    });
-                    long endTime = System.currentTimeMillis();
-                    mainLogger.warn(page.getRelPath() + " indexing is complete");
-                    mainLogger.warn("End parsing {} ms \t" + page.getRelPath(), endTime - startTime);
-                    throw new SiteIndexingException("Индексация остановлена на странице " + page.getRelPath() + " сайт " + page.getSite().getUrl());
-                } catch (SiteIndexingException exception) {
-                    mainLogger.error(exception.getMessage());
-                }
-            }
+                Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
+                indexedPageMap.forEach((key, value) -> {
+                    Lemma findLemma = lemmas.parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseThrow();
+                    mainService.getSearchIndexService().saveIndex(new SearchIndex(page, findLemma, value));
+                });
+                long endTime = System.currentTimeMillis();
+                mainLogger.warn(page.getRelPath() + " indexing is complete");
+                mainLogger.warn("End parsing {} ms \t" + page.getRelPath(), endTime - startTime);
+            } else
+                throw new SiteIndexingException("Индексация остановлена на странице " + page.getRelPath() + " сайт " + page.getSite().getUrl());
+
         }
     }
 
@@ -218,17 +215,16 @@ public class SiteParserRunner implements Runnable {
     private void saveToDatabase(Link link) throws SiteIndexingException {
         Page root = new Page(link);
 
-        link.getChildren().parallelStream().forEach(c -> {
-            if (mainService.isIndexing()) {
-                try {
-                    saveToDatabase(c);
-                } catch (SiteIndexingException e) {
-                    mainLogger.error("Сохранение страницы в базу данных остановлено " + c.getValue());
-                }
-            }
-//                throw new SiteIndexingException("СОхранение объекта Page остановлено")
-        });
         mainService.getPageService().saveOrUpdate(root);
+        for (Link l : link.getChildren()) {
+            if (mainService.isIndexing()) {
+                saveToDatabase(l);
+            } else {
+                throw new SiteIndexingException("Не удалось сохранить страницу " + link.getValue());
+            }
+        }
+
+
     }
 
     public void doStop() {

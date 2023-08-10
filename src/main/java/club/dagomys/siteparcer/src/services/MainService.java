@@ -3,9 +3,13 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.config.AppConfig;
 import club.dagomys.siteparcer.src.entity.*;
+import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.response.*;
+import club.dagomys.siteparcer.src.exception.PageIndexingException;
+import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,23 +17,23 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.Errors;
 
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 public class MainService {
     private final Logger mainLogger = LogManager.getLogger(MainService.class);
     private final AtomicBoolean isIndexing = new AtomicBoolean();
-    private final List<SiteParserRunner> runList = new ArrayList<>();
-    private List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
+    private Response response = new Response();
+
     @Autowired
     private FieldService fieldService;
 
@@ -59,10 +63,10 @@ public class MainService {
 
 
     public Response startIndexingSites(boolean isAllSite, Site site) {
-        Response response = new Response();
         try {
+            List<SiteParserRunner> runList = new ArrayList<>();
             if (isAllSite) {
-                siteService.getAllSites().forEach(s -> {
+                siteService.getAllSites().parallelStream().forEach(s -> {
                     if (s.getStatus() != SiteStatus.INDEXING) {
                         isIndexing.set(true);
                         response.setResult(true);
@@ -70,22 +74,15 @@ public class MainService {
                     } else {
                         isIndexing.set(false);
                         response.setResult(false);
-                        response.setError(s.getUrl()+"is indexing");
+                        response.setError(s.getUrl() + "is indexing");
                         mainLogger.error(s.getUrl() + " is indexing");
                     }
                 });
                 taskListener(runList);
             } else {
-                if (site.getStatus() != SiteStatus.INDEXING) {
-                    isIndexing.set(true);
-                    response.setResult(true);
-                    asyncService.submit(new SiteParserRunner(site, this));
-                } else {
-                    response.setResult(false);
-                    response.setError(site.getUrl() + " status is " + site.getStatus());
-                    mainLogger.info(site.getUrl() + " status is " + site.getStatus());
-                }
+                response = getSiteIndexingResponse(site);
             }
+
             return response;
         } catch (Exception e) {
             site.setLastError(e.getMessage());
@@ -99,11 +96,12 @@ public class MainService {
     }
 
     private Response getSiteIndexingResponse(Site site) {
+        List<SiteParserRunner> runList = new ArrayList<>();
         Response siteResponse = new Response();
         if (site.getStatus() != SiteStatus.INDEXING) {
             isIndexing.set(true);
             siteResponse.setResult(true);
-            asyncService.submit(new SiteParserRunner(site, this));
+            runList.add(new SiteParserRunner(site, this));
         } else {
             isIndexing.set(false);
             siteResponse.setResult(isIndexing.get());
@@ -114,25 +112,21 @@ public class MainService {
     }
 
     public Response stopIndexingSites() {
-        Response response = new Response();
-//        completableFutures = runList.stream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
-        try {
-            runList.parallelStream().forEach(SiteParserRunner::doStop);
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (!isIndexing.get()) {
+            response.setResult(isIndexing.get());
+            response.setError("Индексация не запущена");
+        } else {
+            isIndexing.set(false);
+            siteService.getAllSites().forEach(site -> {
+                if (site.getStatus() != SiteStatus.INDEXED) {
+                    site.setStatusTime(LocalDateTime.now());
+                    site.setStatus(SiteStatus.FAILED);
+                    siteService.saveOrUpdate(site);
+                }
+            });
+            response.setResult(isIndexing.get());
+            response.setError("Индексация останавливается");
         }
-        siteService.getAllSites().forEach(site -> {
-            if (site.getStatus() != SiteStatus.INDEXED) {
-                site.setStatusTime(LocalDateTime.now());
-                site.setStatus(SiteStatus.FAILED);
-                siteService.saveOrUpdate(site);
-            }
-        });
-
-        isIndexing.set(false);
-        response.setResult(false);
-        response.setError("parsing is stopped");
         return response;
     }
 
@@ -170,27 +164,67 @@ public class MainService {
         return response;
     }
 
+    public Response reindexPage(URLRequest URL, @Required Errors error) {
+        Response response = new Response();
+        List<Site> siteList = siteService.getAllSites();
+        Optional<Site> site = Optional.empty();
+        Optional<Page> page = Optional.of(new Page());
+        try {
+            if (!error.hasErrors()) {
+                Link rootLink = new Link(URL.getPath());
+                for (Site s : siteList) {
+                    if (s.getStatus() == SiteStatus.INDEXING) {
+                        throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
+                    }
+                    if (rootLink.getValue().contains(s.getUrl())) {
+                        site = Optional.of(s);
+                        mainLogger.info(site);
+                    }
+                }
+                if (site.isPresent()) {
+                    String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
+                    page.get().setRelPath(relativeURL);
+                    page.get().setSite(site.get());
+                    Document pageFile = Jsoup
+                            .connect(site.get().getUrl() + page.get().getRelPath())
+                            .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                            .referrer("http://www.google.com")
+                            .ignoreHttpErrors(false)
+                            .get();
+                    page.get().setContent(pageFile.outerHtml());
+                    page.get().setStatusCode(pageFile.connection().response().statusCode());
+                    pageService.saveOrUpdate(page.get());
+                    site.get().setStatusTime(LocalDateTime.now());
+                    siteService.saveOrUpdate(site.get());
+                    response.setResult(true);
+                } else throw new PageIndexingException("Такого сайта не существует");
+            } else throw new PageIndexingException(Objects.requireNonNull(error.getFieldError()).getDefaultMessage());
+        } catch (Exception | PageIndexingException e) {
+            response.setResult(false);
+            response.setError(e.getMessage());
+            mainLogger.error(e.getMessage());
+        }
+        return response;
+    }
+
     private void taskListener(List<SiteParserRunner> runList) {
-        completableFutures = runList.stream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
+        List<CompletableFuture<Void>> completableFutures = runList.stream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
         Thread taskListener = new Thread(() -> {
             while (isIndexing.get()) {
-                boolean isEveryRunnableDone = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[completableFutures.size() - 1])).isDone();
-                if (isEveryRunnableDone) {
-                    mainLogger.info("All tasks is done!");
-                    isIndexing.set(false);
-                }
                 try {
+                    boolean isEveryRunnableDone = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[completableFutures.size() - 1])).isDone();
+                    if (isEveryRunnableDone) {
+                        isIndexing.set(false);
+                        mainLogger.info("All tasks is done!");
+                    }
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
         });
-        taskListener.setName("taskListener");
+        taskListener.setName("siteTaskListener");
         taskListener.start();
-        if (!isIndexing.get()) {
-            taskListener.interrupt();
-        }
     }
 
     public Boolean isIndexing() {

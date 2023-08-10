@@ -62,7 +62,7 @@ public class APIController {
 
     @PostMapping("/indexPage")
     public ResponseEntity<Response> indexPage(@Valid @ModelAttribute("url") URLRequest URL, Errors errors, Model model) {
-        Response response = mainService.getPageService().reindexPage(URL, errors);
+        Response response = mainService.reindexPage(URL, errors);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

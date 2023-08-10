@@ -25,10 +25,6 @@ public class PageService {
     @Autowired
     private PageRepository pageRepository;
 
-    @Autowired
-    private SiteRepository siteRepository;
-
-
     public List<Page> getAllPages() {
         return new ArrayList<>(pageRepository.findAll());
     }
@@ -67,69 +63,11 @@ public class PageService {
         return pageRepository.getPageBySite(site).get();
     }
 
-    public Page getByRelPathAndSite(String path, Site site) {
+    public Page getByRelPathAndSite(String path, Site site) throws PageIndexingException {
         Optional<Page> findPage = pageRepository.findByRelPathAndSite(path, site);
         if (findPage.isPresent()) {
             return findPage.get();
-        } else {
-            mainLogger.error(new Exception("page not found exception!!!"));
-            return null;
-        }
-    }
-
-    public Response reindexPage(URLRequest URL, @Required Errors error) {
-        Response response = new Response();
-        List<Site> siteList = siteRepository.findAll();
-        Optional<Site> site = Optional.empty();
-        Optional<Page> page = Optional.of(new Page());
-
-        Link rootLink = new Link(URL.getPath());
-        try {
-            for (Site s : siteList) {
-                if (s.getStatus() == SiteStatus.INDEXING) {
-                   throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
-                }
-                if (rootLink.getValue().contains(s.getUrl())) {
-                    site = Optional.of(s);
-                    mainLogger.info(site);
-                }
-            }
-            if (site.isPresent()) {
-                if (!error.hasErrors()) {
-                    String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
-                    page.get().setRelPath(relativeURL);
-                    page.get().setSite(site.get());
-                    try {
-                        Document pageFile = Jsoup
-                                .connect(site.get().getUrl() + page.get().getRelPath())
-                                .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                                .referrer("http://www.google.com")
-                                .ignoreHttpErrors(false)
-                                .get();
-                        page.get().setContent(pageFile.outerHtml());
-                        page.get().setStatusCode(pageFile.connection().response().statusCode());
-                        saveOrUpdate(page.get());
-                    } catch (Exception e) {
-                        mainLogger.error(e.getMessage());
-                    }
-                    site.get().setStatusTime(LocalDateTime.now());
-                    siteRepository.save(site.get());
-                    response.setResult(true);
-                } else {
-                    response.setError(Objects.requireNonNull(error.getFieldError()).getDefaultMessage());
-                }
-            } else {
-                response.setError("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
-                throw new PageIndexingException("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
-            }
-        } catch (Exception e) {
-            response.setResult(false);
-            response.setError(e.getMessage());
-            mainLogger.error(e.getMessage());
-        } catch (PageIndexingException e) {
-            mainLogger.info(e.getMessage());
-        }
-        return response;
+        } else throw new PageIndexingException("Page " + path + "not found!!!");
     }
 
     public void deleteAll(List<Page> pageList) {

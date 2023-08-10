@@ -45,19 +45,28 @@ public class SiteParser extends RecursiveTask<Link> {
         List<SiteParser> childParserList = new ArrayList<>();
         Link connLink = null;
         try {
+
             connLink = connectToLink(rootURL);
             for (Link child : connLink.getChildren()) {
-                SiteParser childParser = new SiteParser(child, mainService, site);
-                childParser.fork();
-                childParserList.add(childParser);
+                if (this.mainService.isIndexing()) {
+                    SiteParser childParser = new SiteParser(child, mainService, site);
+                    childParser.fork();
+                    childParserList.add(childParser);
+                } else {
+                    throw new SiteIndexingException("Parsing is stopped " + site.getUrl());
+                }
+
             }
-            if (this.mainService.isIndexing()) {
-                for (SiteParser childTask : childParserList) {
+
+            for (SiteParser childTask : childParserList) {
+                if (this.mainService.isIndexing()) {
                     childTask.compute();
-//                    mainLogger.info("\t\t" + );
                     childTask.join();
+                } else {
+                    throw new SiteIndexingException("Compute is stopped " + site.getUrl());
                 }
             }
+
         } catch (SiteIndexingException e) {
             mainLogger.error(e.getMessage());
         }

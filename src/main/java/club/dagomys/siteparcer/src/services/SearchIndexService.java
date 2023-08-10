@@ -1,6 +1,8 @@
 package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.entity.*;
+import club.dagomys.siteparcer.src.exception.PageIndexingException;
+import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import club.dagomys.siteparcer.src.repos.SearchIndexRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,6 +42,12 @@ public class SearchIndexService {
 
     public List<SearchIndex> findIndexByPage(Page page) {
         return searchIndexRepository.findByPage(page);
+    }
+
+    public void deleteByPage(Page page) throws SiteIndexingException {
+        if(searchIndexRepository.findByPage(page)!=null) {
+            searchIndexRepository.deleteByPage(page);
+        } else throw new SiteIndexingException("Индекс не найден");
     }
 
 
