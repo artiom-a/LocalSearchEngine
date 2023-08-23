@@ -5,8 +5,10 @@ import club.dagomys.siteparcer.src.config.AppConfig;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.response.*;
+import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
+import club.dagomys.siteparcer.src.repos.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
@@ -19,14 +21,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.Errors;
 
-
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 @Service
 public class MainService {
@@ -35,22 +39,19 @@ public class MainService {
     private Response response = new Response();
 
     @Autowired
-    private FieldService fieldService;
+    private FieldRepository fieldRepository;
 
     @Autowired
-    private LemmaService lemmaService;
+    private LemmaRepository lemmaRepository;
 
     @Autowired
-    private SearchIndexService searchIndexService;
+    private SearchIndexRepository searchIndexRepository;
 
     @Autowired
-    private SearchService searchService;
+    private SiteRepository siteRepository;
 
     @Autowired
-    private SiteService siteService;
-
-    @Autowired
-    private PageService pageService;
+    private PageRepository pageRepository;
 
     @Autowired
     private ThreadPoolTaskExecutor asyncService;
@@ -66,7 +67,7 @@ public class MainService {
         try {
             List<SiteParserRunner> runList = new ArrayList<>();
             if (isAllSite) {
-                siteService.getAllSites().parallelStream().forEach(s -> {
+                siteRepository.findAll().forEach(s -> {
                     if (s.getStatus() != SiteStatus.INDEXING) {
                         isIndexing.set(true);
                         response.setResult(true);
@@ -74,7 +75,7 @@ public class MainService {
                     } else {
                         isIndexing.set(false);
                         response.setResult(false);
-                        response.setError(s.getUrl() + "is indexing");
+                        response.setError(s.getUrl() + " is indexing");
                         mainLogger.error(s.getUrl() + " is indexing");
                     }
                 });
@@ -86,7 +87,7 @@ public class MainService {
             return response;
         } catch (Exception e) {
             site.setLastError(e.getMessage());
-            siteService.saveOrUpdate(site);
+            siteRepository.saveAndFlush(site);
             mainLogger.error("Ошибка индексации " + e);
             isIndexing.set(false);
             response.setResult(false);
@@ -117,11 +118,11 @@ public class MainService {
             response.setError("Индексация не запущена");
         } else {
             isIndexing.set(false);
-            siteService.getAllSites().forEach(site -> {
+            siteRepository.findAll().forEach(site -> {
                 if (site.getStatus() != SiteStatus.INDEXED) {
                     site.setStatusTime(LocalDateTime.now());
                     site.setStatus(SiteStatus.FAILED);
-                    siteService.saveOrUpdate(site);
+                    siteRepository.saveAndFlush(site);
                 }
             });
             response.setResult(isIndexing.get());
@@ -139,22 +140,26 @@ public class MainService {
         AtomicInteger allLemmas = new AtomicInteger();
         AtomicInteger allPages = new AtomicInteger();
 
-        List<Site> siteList = siteService.getAllSites();
+        List<Site> siteList = siteRepository.findAll();
 
         if (siteList.size() == 0) {
             return new DashboardResponse();
         }
 
         siteList.forEach(site -> {
-            int pages = pageService.getPagesBySite(site).size();
-            int lemmas = lemmaService.getLemmaList(site).get().size();
-            allPages.updateAndGet(v -> v + pages);
-            allLemmas.updateAndGet(v -> v + lemmas);
-            details.add(new Detail(site.getUrl(), site.getName(), site.getStatus(), site.getStatusTime(), site.getLastError(), pages, lemmas));
+            try {
+                int pages = pageRepository.findAllPageBySite(site).get().size();
+                int lemmas = lemmaRepository.findAllLemmaBySite(site).get().size();
+                allPages.updateAndGet(v -> v + pages);
+                allLemmas.updateAndGet(v -> v + lemmas);
+                details.add(new Detail(site.getUrl(), site.getName(), site.getStatus(), site.getStatusTime(), site.getLastError(), pages, lemmas));
+            } catch (LemmaNotFoundException e) {
+                e.printStackTrace();
+            }
         });
         total.setLemmaCount(allLemmas.get());
         total.setPageCount(allPages.get());
-        total.setSiteCount(siteService.getSiteCount());
+        total.setSiteCount((int) siteRepository.count());
         total.setIndexing(isIndexing.get());
         statistic.setTotal(total);
         statistic.setSiteList(details);
@@ -166,7 +171,7 @@ public class MainService {
 
     public Response reindexPage(URLRequest URL, @Required Errors error) {
         Response response = new Response();
-        List<Site> siteList = siteService.getAllSites();
+        List<Site> siteList = siteRepository.findAll();
         Optional<Site> site = Optional.empty();
         Optional<Page> page = Optional.of(new Page());
         try {
@@ -193,9 +198,9 @@ public class MainService {
                             .get();
                     page.get().setContent(pageFile.outerHtml());
                     page.get().setStatusCode(pageFile.connection().response().statusCode());
-                    pageService.saveOrUpdate(page.get());
+                    pageRepository.saveAndFlush(page.get());
                     site.get().setStatusTime(LocalDateTime.now());
-                    siteService.saveOrUpdate(site.get());
+                    siteRepository.saveAndFlush(site.get());
                     response.setResult(true);
                 } else throw new PageIndexingException("Такого сайта не существует");
             } else throw new PageIndexingException(Objects.requireNonNull(error.getFieldError()).getDefaultMessage());
@@ -208,7 +213,7 @@ public class MainService {
     }
 
     private void taskListener(List<SiteParserRunner> runList) {
-        List<CompletableFuture<Void>> completableFutures = runList.stream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
+        List<CompletableFuture<Void>> completableFutures = runList.parallelStream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
         Thread taskListener = new Thread(() -> {
             while (isIndexing.get()) {
                 try {
@@ -231,24 +236,24 @@ public class MainService {
         return isIndexing.get();
     }
 
-    public FieldService getFieldService() {
-        return fieldService;
+    public FieldRepository getFieldService() {
+        return fieldRepository;
     }
 
-    public LemmaService getLemmaService() {
-        return lemmaService;
+    public LemmaRepository getLemmaService() {
+        return lemmaRepository;
     }
 
-    public PageService getPageService() {
-        return pageService;
+    public PageRepository getPageService() {
+        return pageRepository;
     }
 
-    public SiteService getSiteService() {
-        return siteService;
+    public SiteRepository getSiteService() {
+        return siteRepository;
     }
 
-    public SearchIndexService getSearchIndexService() {
-        return searchIndexService;
+    public SearchIndexRepository getSearchIndexRepository() {
+        return searchIndexRepository;
     }
 
     public ForkJoinPool getForkJoinPool() {
@@ -259,14 +264,30 @@ public class MainService {
         return appConfig;
     }
 
+
+    /**
+     * @param fieldService
+     * @param siteService  добавляет сайты из конфигурационного файла в БД. Если поле name isEmpty,
+     *                     то вместо названия сайта подставляется поле title главной страницы сайта.
+     * @return добавляет 2 статические записи для полей на страницах сайтов со значениями по умолчанию
+     */
     @Bean
-    public CommandLineRunner saveSiteToDb(SiteService siteService) throws Exception {
+    public CommandLineRunner saveSiteToDb(SiteRepository siteService, FieldRepository fieldService) throws SiteIndexingException {
         return (String[] args) -> {
+            Field title = new Field("title", FieldSelector.TITLE, 1f);
+            Field body = new Field("body", FieldSelector.BODY, 0.8f);
+            if (this.fieldRepository.findAll().size() < 2) {
+                this.fieldRepository.save(title);
+                this.fieldRepository.save(body);
+            } else {
+                mainLogger.info("Данные уже добавлены ранее");
+                this.fieldRepository.findAll().forEach(mainLogger::info);
+            }
             appConfig.getSiteList().forEach(site -> {
                 if (site.getUrl().endsWith("/")) {
                     site.setUrl(site.getUrl().strip().replaceFirst(".$", ""));
                 }
-                Optional<Site> findSite = siteService.getSite(site.getUrl());
+                Optional<Site> findSite = siteRepository.findByUrl(site.getUrl());
                 if (findSite.isEmpty()) {
                     if (site.getName().isEmpty()) {
                         try {
@@ -281,12 +302,12 @@ public class MainService {
                             site.setLastError("Site is not found");
                             mainLogger.error(site.getUrl() + " " + e.getMessage());
                         }
-                        siteService.saveOrUpdate(site);
+                        siteService.saveAndFlush(site);
                     } else {
-                        siteService.saveSite(site);
+                        siteService.saveAndFlush(site);
                     }
                 } else {
-                    siteService.saveOrUpdate(findSite.get());
+                    siteService.saveAndFlush(findSite.get());
                 }
             });
         };

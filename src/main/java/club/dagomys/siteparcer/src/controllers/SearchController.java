@@ -31,8 +31,7 @@ public class SearchController {
 
     @PostMapping("/search")
     public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model,
-                         @RequestParam(name = "site", required = false, defaultValue = "all") String site)
-    {
+                         @RequestParam(name = "site", required = false, defaultValue = "all") String site) {
         if (!errors.hasErrors()) {
             searchResponse = searchService.search(searchRequest, site);
             return "redirect:/new/search";

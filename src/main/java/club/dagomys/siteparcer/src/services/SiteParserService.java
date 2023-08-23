@@ -12,25 +12,25 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
 @Component
 @NoArgsConstructor
-public class SiteParser extends RecursiveTask<Link> {
+public class SiteParserService extends RecursiveTask<Link> {
     private Link rootURL;
     private Site site;
 
     private MainService mainService;
-    private static final Logger mainLogger = LogManager.getLogger(SiteParser.class);
+    private static final Logger mainLogger = LogManager.getLogger(SiteParserService.class);
 
-    public SiteParser(Link link) throws PageIndexingException {
+    public SiteParserService(Link link) throws PageIndexingException {
         this.rootURL = link;
     }
 
-    public SiteParser(Link rootLink, MainService mainService, Site site) throws SiteIndexingException {
+    public SiteParserService(Link rootLink, MainService mainService, Site site) throws SiteIndexingException {
         this.rootURL = rootLink;
         this.mainService = mainService;
         this.site = site;
@@ -42,29 +42,25 @@ public class SiteParser extends RecursiveTask<Link> {
     // }
     @Override
     protected Link compute() {
-        List<SiteParser> childParserList = new ArrayList<>();
+        List<SiteParserService> childParserList = new ArrayList<>();
         Link connLink = null;
         try {
 
             connLink = connectToLink(rootURL);
             for (Link child : connLink.getChildren()) {
                 if (this.mainService.isIndexing()) {
-                    SiteParser childParser = new SiteParser(child, mainService, site);
+                    SiteParserService childParser = new SiteParserService(child, mainService, site);
                     childParser.fork();
                     childParserList.add(childParser);
-                } else {
-                    throw new SiteIndexingException("Parsing is stopped " + site.getUrl());
-                }
+                } else throw new SiteIndexingException("Parsing is stopped " + site.getUrl());
 
             }
 
-            for (SiteParser childTask : childParserList) {
+            for (SiteParserService childTask : childParserList) {
                 if (this.mainService.isIndexing()) {
                     childTask.compute();
                     childTask.join();
-                } else {
-                    throw new SiteIndexingException("Compute is stopped " + site.getUrl());
-                }
+                } else throw new SiteIndexingException("Compute is stopped " + site.getUrl());
             }
 
         } catch (SiteIndexingException e) {
@@ -87,7 +83,7 @@ public class SiteParser extends RecursiveTask<Link> {
 
     public Link connectToLink(Link connectedLink) {
         try {
-            Thread.sleep(120);
+            Thread.sleep(100);
             Document siteFile = Jsoup
                     .connect(connectedLink.getValue())
                     .userAgent(mainService.getAppConfig().getUserAgent())
@@ -114,8 +110,7 @@ public class SiteParser extends RecursiveTask<Link> {
 
             });
         } catch (Exception e) {
-            this.site.setLastError(e.getMessage());
-            mainService.getSiteService().saveOrUpdate(site);
+            mainService.getSiteService().saveAndFlush(site);
             mainLogger.error(e.getMessage());
         }
         return connectedLink;

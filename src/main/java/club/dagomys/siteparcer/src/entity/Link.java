@@ -1,10 +1,7 @@
 package club.dagomys.siteparcer.src.entity;
 
-import club.dagomys.siteparcer.src.services.MainService;
-import club.dagomys.siteparcer.src.services.SiteService;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;

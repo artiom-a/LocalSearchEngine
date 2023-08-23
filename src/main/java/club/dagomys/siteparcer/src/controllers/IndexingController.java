@@ -2,24 +2,17 @@ package club.dagomys.siteparcer.src.controllers;
 
 import club.dagomys.siteparcer.src.entity.Link;
 import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.entity.SiteStatus;
 import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.services.MainService;
-import club.dagomys.siteparcer.src.services.SearchIndexService;
-import club.dagomys.siteparcer.src.services.SiteParserRunner;
-import club.dagomys.siteparcer.src.services.SiteService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.time.LocalDateTime;
 import java.util.concurrent.ExecutionException;
 
 @Controller
@@ -28,16 +21,11 @@ public class IndexingController {
     private final Logger mainLogger = LogManager.getLogger(IndexingController.class);
 
     @Autowired
-    private SearchIndexService searchIndexService;
-
-    @Autowired
     private MainService mainService;
 
-    @Autowired
-    private SiteService siteService;
 
     @GetMapping(value = {"/startIndexing"})
-    public String startIndexing(Model model){
+    public String startIndexing(Model model) {
         mainService.startIndexingSites(true, null);
         return "redirect:/new/sites";
     }
@@ -49,7 +37,7 @@ public class IndexingController {
     }
 
 
-    @GetMapping(value = "/new/addUrl")
+    @GetMapping(value = "/addUrl")
     public String getAddUrlPage(Model model, @ModelAttribute("URL") URLRequest URL) {
         return "/frontend/add_url";
     }
@@ -63,7 +51,7 @@ public class IndexingController {
             if (!newSite.getUrl().endsWith("/")) {
                 newSite.setUrl(newSite.getUrl().concat("/"));
             }
-            siteService.saveSite(newSite);
+            mainService.getSiteService().saveAndFlush(newSite);
             return "redirect:/new/sites";
         } else {
             mainLogger.info(errors.getAllErrors());
@@ -73,14 +61,14 @@ public class IndexingController {
 
     @DeleteMapping(value = "/sites/{id}")
     public String deleteSite(@PathVariable("id") int id) {
-        Site findSite = siteService.getSite(id);
-        siteService.deleteSite(findSite);
+        Site findSite = mainService.getSiteService().findById(id).orElseThrow();
+        mainService.getSiteService().delete(findSite);
         return "redirect:/new/sites";
     }
 
-    @GetMapping("/new/sites/{id}")
+    @GetMapping("/sites/{id}")
     public String getSite(@PathVariable(value = "id") Integer id) throws ExecutionException, InterruptedException {
-        Site findSite = siteService.getSite(id);
+        Site findSite = mainService.getSiteService().findById(id).orElseThrow();
         mainService.startIndexingSites(false, findSite);
         return "redirect:/new/sites";
     }

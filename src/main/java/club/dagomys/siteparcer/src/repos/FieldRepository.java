@@ -1,13 +1,14 @@
 package club.dagomys.siteparcer.src.repos;
 
 import club.dagomys.siteparcer.src.entity.Field;
-import lombok.experimental.FieldDefaults;
+import club.dagomys.siteparcer.src.entity.FieldSelector;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import javax.persistence.criteria.CriteriaBuilder;
+import java.util.Optional;
 
 @Repository
 public interface FieldRepository extends JpaRepository<Field, Integer> {
+
+    Optional<Field> findFieldBySelector(FieldSelector selector);
 }

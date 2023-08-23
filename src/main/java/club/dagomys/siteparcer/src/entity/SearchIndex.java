@@ -17,7 +17,7 @@ import javax.persistence.*;
 @Table(name = "`index`")
 public class SearchIndex {
 
-    public SearchIndex(Page page, Lemma lemma, float rank){
+    public SearchIndex(Page page, Lemma lemma, float rank) {
         this.page = page;
         this.lemma = lemma;
         this.rank = rank;
@@ -27,11 +27,11 @@ public class SearchIndex {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     @JoinColumn(name = "page_id")
-    @ManyToOne(fetch = FetchType.EAGER, cascade=CascadeType.MERGE)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Page page;
     @JoinColumn(name = "lemma_id")
-    @ManyToOne(fetch = FetchType.EAGER, cascade=CascadeType.MERGE)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Lemma lemma;
     @Column(name = "`rank`")

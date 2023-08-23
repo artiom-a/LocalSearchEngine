@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +45,7 @@ public class LemmaCounter {
 
     public Map<String, Integer> countLemmas() {
         List<String> morphList = replacedText.stream()
-                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph)).toList();
+                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(this::isAuxiliaryPartsOfSpeech).toList();
         wordsMap = morphList.stream()
                 .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
                 .collect(Collectors.toMap(l -> l.get(0).replace('ё', 'е'), v -> 1, Integer::sum));
@@ -82,7 +80,7 @@ public class LemmaCounter {
     public Set<String> getLemmaSet() {
         lemmaSet = new TreeSet<>();
         Set<String> morphList = replacedText.stream()
-                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(morph -> !isAuxiliaryPartsOfSpeech(morph))
+                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(this::isAuxiliaryPartsOfSpeech)
                 .collect(Collectors.toSet());
 
         lemmaSet = morphList.stream()
@@ -101,24 +99,24 @@ public class LemmaCounter {
 
         if (Objects.equals(getLanguage(word), "RU")) {
             for (String morph : russianMorphology.getMorphInfo(word)) {
-                return morph.contains("СОЮЗ") |
+                return !(morph.contains("СОЮЗ") |
                         morph.contains("МЕЖД") |
                         morph.contains("МС") |
                         morph.contains("ПРЕДЛ") |
                         morph.contains("КР_ПРИЛ") |
-                        morph.contains("ЧАСТ");
+                        morph.contains("ЧАСТ"));
             }
         } else if (Objects.equals(getLanguage(word), "EN")) {
             for (String morph : englishMorphology.getMorphInfo(word)) {
-                return morph.contains("CONJ") |
+                return !(morph.contains("CONJ") |
                         morph.contains("INT") |
                         morph.contains("PRON") |
                         morph.contains("ARTICLE") |
                         morph.contains("PREP") |
-                        morph.contains("PART");
+                        morph.contains("PART"));
             }
         } else System.out.println("Язык не распознан");
-        return false;
+        return true;
     }
 
 

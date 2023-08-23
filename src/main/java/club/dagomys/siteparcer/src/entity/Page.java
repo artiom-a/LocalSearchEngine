@@ -1,9 +1,11 @@
 package club.dagomys.siteparcer.src.entity;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -13,7 +15,7 @@ import java.io.Serializable;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(indexes = {@Index(name = "page_index", columnList = "path") })
+@Table(indexes = {@Index(name = "page_index", columnList = "path")})
 public class Page implements Serializable {
 
     @Id

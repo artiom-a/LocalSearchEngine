@@ -1,13 +1,18 @@
 package club.dagomys.siteparcer.src.services;
 
-import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.entity.response.SearchData;
-import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
+import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
+import club.dagomys.siteparcer.src.entity.response.SearchData;
 import club.dagomys.siteparcer.src.entity.response.SearchResponse;
+import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
+import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
+import club.dagomys.siteparcer.src.repos.LemmaRepository;
+import club.dagomys.siteparcer.src.repos.PageRepository;
+import club.dagomys.siteparcer.src.repos.SearchIndexRepository;
+import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -28,16 +33,16 @@ public class SearchService {
     private Site site;
 
     @Autowired
-    private LemmaService lemmaService;
+    private LemmaRepository lemmaRepository;
 
     @Autowired
-    private PageService pageService;
+    private PageRepository pageRepository;
 
     @Autowired
-    private SiteService siteService;
+    private SiteRepository siteRepository;
 
     @Autowired
-    private SearchIndexService searchIndexService;
+    private SearchIndexRepository searchIndexRepository;
 
     private LemmaCounter counter;
 
@@ -46,7 +51,7 @@ public class SearchService {
         SearchResponse response = new SearchResponse();
         List<Page> findPages = new ArrayList<>();
         List<Lemma> findLemmas = new ArrayList<>();
-        Optional<Site> findSite = siteService.getSite(site);
+        Optional<Site> findSite = siteRepository.findByUrl(site);
         List<Lemma> requestLemmas = getLemmasFromRequest(searchLine);
         Map<Site, List<Lemma>> test = getSiteLemmaMap(requestLemmas);
 
@@ -77,13 +82,13 @@ public class SearchService {
     private List<Page> getSearchData(List<Lemma> findSiteLemmas) {
         Lemma minFreqLemma = getMinLemma(findSiteLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
-        List<SearchIndex> indexingList = searchIndexService.findIndexByLemma(minFreqLemma);
+        List<SearchIndex> indexingList = searchIndexRepository.findByLemmaOrderByRankDesc(minFreqLemma);
         List<Page> pages = new ArrayList<>();
         indexingList.forEach(indexing -> pages.add(indexing.getPage()));
 
         for (Lemma lemma : findSiteLemmas) {
             if (!pages.isEmpty() && lemma != minFreqLemma) {
-                List<SearchIndex> secondIndexSearch = searchIndexService.findIndexByLemma(lemma);
+                List<SearchIndex> secondIndexSearch = searchIndexRepository.findByLemmaOrderByRankDesc(lemma);
                 List<Page> pageList = new ArrayList<>();
                 secondIndexSearch.forEach(indexing -> pageList.add(indexing.getPage()));
                 findPages.retainAll(pageList);
@@ -181,7 +186,7 @@ public class SearchService {
         for (Lemma lemma : lemmas) {
             SearchIndex searchIndex = null;
             try {
-                searchIndex = searchIndexService.findIndexByPageAndLemma(page, lemma);
+                searchIndex = searchIndexRepository.findByPageAndLemma(page, lemma).get();
                 r = r + searchIndex.getRank();
             } catch (Throwable e) {
                 mainLogger.error(e.getMessage());
@@ -219,8 +224,12 @@ public class SearchService {
             counter = new LemmaCounter(searchLine.getSearchLine());
             Map<String, Integer> lemmas = counter.countLemmas();
             lemmas.forEach((key, value) -> {
-                Optional<List<Lemma>> findLemmas = lemmaService.findLemmas(key);
-                findLemmas.ifPresent(lemmaList::addAll);
+                try {
+                    Optional<List<Lemma>> findLemmas = lemmaRepository.findAllByLemma(key);
+                    findLemmas.ifPresent(lemmaList::addAll);
+                } catch (LemmaNotFoundException e) {
+                    mainLogger.warn(e.getMessage());
+                }
             });
             deleteCommonLemmas(lemmaList);
         } catch (IOException e) {
@@ -233,7 +242,7 @@ public class SearchService {
     private Set<Lemma> deleteCommonLemmas(List<Lemma> lemmas) {
         Set<Lemma> modifyLemmaList = new TreeSet<>(lemmas);
         final double percent = 1;
-        double frequency = pageService.getAllPages().size() * percent;
+        double frequency = pageRepository.findAll().size() * percent;
         lemmas.removeIf(l -> l.getFrequency() > frequency);
         return modifyLemmaList;
     }
@@ -248,7 +257,7 @@ public class SearchService {
         if (lemma == null) {
             mainLogger.error("lemma not exist");
         } else {
-            findPages = new ArrayList<>(searchIndexService.findIndexByLemma(lemma));
+            findPages = new ArrayList<>(searchIndexRepository.findByLemmaOrderByRankDesc(lemma));
         }
         return findPages.stream().map(SearchIndex::getPage).collect(Collectors.toList());
     }
