@@ -1,6 +1,6 @@
-FROM openjdk:17
-MAINTAINER editory_v1.
-ARG JAR_FILE=target/LocalSearchEngine-1.0.jar
+FROM openjdk:22-ea-slim
+MAINTAINER linkdex:22-ea-slim
+ARG JAR_FILE=target/Linkdex-2.0.jar
 WORKDIR /opt/app
 COPY ${JAR_FILE} app.jar
-ENTRYPOINT ["java","-jar","app.jar"]
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar app.jar"]
