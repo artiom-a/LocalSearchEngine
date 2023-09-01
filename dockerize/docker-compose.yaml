@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+
+  db:
+    build:
+      context: ../
+      dockerfile: dockerize/db/Dockerfile
+    container_name: db_mysql
+    hostname: mysql
+    command: [ '--default-authentication-plugin=mysql_native_password',
+               '--character-set-server=utf8mb4',
+               '--collation-server=utf8mb4_unicode_ci' ]
+    image: mysql/mysql-server:5.7
+    restart: on-failure
+    environment:
+      MYSQL_ROOT_PASSWORD: skillbox_engine
+      MYSQL_DATABASE: linkdex
+      MYSQL_USER: skillbox_engine
+      MYSQL_PASSWORD: skillbox_engine
+    ports:
+      - "3306:3306"
+    volumes:
+#      - /home/user/db/mysql/data:/var/lib/mysql
+      - ../src/main/resources/sql_scripts/init_mysql.sql:/docker-entrypoint-initdb.d/init_mysql.sql:ro
+    networks:
+      - local-net
+
+  linkdex:
+    build:
+      context: ../
+      dockerfile: dockerize/linkdex/Dockerfile
+    container_name: linkdex
+    hostname: linkdex
+    image: linkdex:3.0.0
+    restart: on-failure
+    environment:
+      JAVA_OPTS: "-Dspring.config.location=/opt/app/resources/application.yaml"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ..\src\main\resources\application.yaml:/opt/app/resources/application.yaml:ro
+    networks:
+      - local-net
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  local-net:
+    driver: bridge

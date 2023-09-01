@@ -8,6 +8,7 @@ import club.dagomys.siteparcer.src.entity.response.*;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
+import club.dagomys.siteparcer.src.lemmatisator.SiteParserRunner;
 import club.dagomys.siteparcer.src.repos.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -267,7 +268,7 @@ public class MainService {
 
     /**
      * @param fieldService
-     * @param siteService  добавляет сайты из конфигурационного файла в БД. Если поле name isEmpty,
+     * @param siteService  добавляет сайты из конфигурационного файла в БД. Если поле 'name' isEmpty,
      *                     то вместо названия сайта подставляется поле title главной страницы сайта.
      * @return добавляет 2 статические записи для полей на страницах сайтов со значениями по умолчанию
      */

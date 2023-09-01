@@ -1,9 +1,9 @@
-package club.dagomys.siteparcer.src.services;
+package club.dagomys.siteparcer.src.lemmatisator;
 
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
-import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
+import club.dagomys.siteparcer.src.services.MainService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -23,7 +23,6 @@ import java.util.concurrent.RecursiveTask;
 @Component
 public class SiteParserRunner implements Runnable {
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
-    private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
     private final Site site;
     private volatile boolean isRunning;
 
@@ -208,7 +207,7 @@ public class SiteParserRunner implements Runnable {
         if (mainService.isIndexing()) {
             Link rootLink = new Link(this.site.getUrl());
             mainService.getSiteService().saveAndFlush(this.site);
-            RecursiveTask<Link> forkJoinTask = new SiteParserService(rootLink, mainService, this.site);
+            RecursiveTask<Link> forkJoinTask = new SiteParserTask(rootLink, mainService, this.site);
             return mainService.getForkJoinPool().invoke(forkJoinTask);
         } else throw new SiteIndexingException("Парсинг ссылок остановлен " + this.site.getUrl());
     }

@@ -1,7 +1,0 @@
-FROM postgres:15.1-alpine
-
-LABEL author="Artem Abramov"
-LABEL description="Postgres Image for LinkDex Skillbox"
-LABEL version="1.0"
-
-COPY src/main/resources/sql_scripts/init.sql /docker-entrypoint-initdb.d/
