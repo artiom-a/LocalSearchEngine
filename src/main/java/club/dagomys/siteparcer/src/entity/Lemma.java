@@ -1,9 +1,7 @@
 package club.dagomys.siteparcer.src.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -12,7 +10,9 @@ import java.util.Objects;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
+@ToString
 @Table(indexes = {@Index(name = "lemma_index", columnList = "lemma")})
 public class Lemma implements Comparable<Lemma> {
 
@@ -52,5 +52,10 @@ public class Lemma implements Comparable<Lemma> {
     public Lemma sum(Lemma lemma) {
         lemma.setFrequency(this.frequency + lemma.frequency);
         return lemma;
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

@@ -126,7 +126,7 @@ public class MainService {
                     siteRepository.saveAndFlush(site);
                 }
             });
-            response.setResult(isIndexing.get());
+            response.setResult(true);
             response.setError("Индексация останавливается");
         }
         return response;
