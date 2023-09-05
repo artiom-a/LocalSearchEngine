@@ -35,6 +35,9 @@ services:
     image: linkdex:3.0.0
     restart: on-failure
     environment:
+      SPRING_DATASOURSE_URL: "jdbc:mysql://mysql:3306/linkdex"
+      SPRING_DATASOURSE_USERNAME: "skillbox_engine"
+      SPRING_DATASOURSE_PASSWORD: "skillbox_engine"
       JAVA_OPTS: "-Dspring.config.location=/opt/app/resources/application.yaml"
     ports:
       - "8080:8080"

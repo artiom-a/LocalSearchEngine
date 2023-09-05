@@ -214,7 +214,7 @@ public class SiteParserRunner implements Runnable {
 
 
     private void saveToDatabase(Link link) throws SiteIndexingException {
-        if (link.getRelUrl() != null && link.getHtml() != null) {
+        if (link.getHtml() != null) {
             Optional<Page> root = mainService.getPageService().findByRelPathAndSite(link.getRelUrl(), link.getSite());
             if (root.isPresent()) {
                 mainService.getPageService().saveAndFlush(root.get());

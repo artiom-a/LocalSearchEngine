@@ -103,6 +103,10 @@ public class SiteParserTask extends RecursiveTask<Link> {
                 connectedLink.setHtml(siteFile.outerHtml());
                 connectedLink.setStatusCode(status);
                 connectedLink.setSite(site);
+
+                if (connectedLink.getRelUrl() == null) {
+                    connectedLink.setRelUrl("/");
+                }
                 if (urlChecker(absolutURL)) {
                     Link child = new Link(absolutURL);
                     child.setSite(site);

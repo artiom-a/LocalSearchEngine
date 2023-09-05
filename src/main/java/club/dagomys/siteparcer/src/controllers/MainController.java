@@ -27,8 +27,8 @@ public class MainController implements WebMvcConfigurer {
 
     @GetMapping(value = {"/new"})
     public String getOldPage(Model model) {
-        model.addAttribute("sites", mainService.getSiteService().count());
-        model.addAttribute("pages", mainService.getPageService().count());
+        model.addAttribute("sites", mainService.getSiteService().findAll());
+        model.addAttribute("pages", mainService.getPageService().findAll());
         return "/frontend/index";
     }
 

@@ -50,8 +50,8 @@ public class Link implements Node, Comparable<Link> {
         }
         if (!root.contains(child.getValue())) {
             child.setParentLink(this);
-            childSet.add(child);
             child.setRelUrl(relLink);
+            childSet.add(child);
         }
     }
 
