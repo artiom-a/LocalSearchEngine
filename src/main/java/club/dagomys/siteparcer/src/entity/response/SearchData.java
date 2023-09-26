@@ -2,14 +2,19 @@ package club.dagomys.siteparcer.src.entity.response;
 
 import club.dagomys.siteparcer.src.entity.Page;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.annotation.Immutable;
+
+import java.io.Serializable;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Immutable
 public class SearchData implements Comparable<SearchData> {
     @JsonProperty("site")
     private String rootUrl;
@@ -37,3 +42,4 @@ public class SearchData implements Comparable<SearchData> {
         return res;
     }
 }
+

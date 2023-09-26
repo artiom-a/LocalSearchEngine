@@ -1,6 +1,7 @@
 package club.dagomys.siteparcer.src.entity;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,12 +13,16 @@ import java.util.TreeSet;
 @AllArgsConstructor
 public class Link implements Node, Comparable<Link> {
     private String URL;
+    @Getter
     private String relUrl;
     private Set<Link> childSet;
     private Link parentLink;
+    @Getter
     private int layer;
     private int statusCode;
+    @Getter
     private String html;
+    @Getter
     private Site site;
 
     public Link(String URL) {
@@ -26,10 +31,6 @@ public class Link implements Node, Comparable<Link> {
         this.URL = URL.strip();
         childSet = new TreeSet<>();
         statusCode = 0;
-    }
-
-    public int getLayer() {
-        return layer;
     }
 
     int setLayer() {
@@ -109,10 +110,6 @@ public class Link implements Node, Comparable<Link> {
         return URL;
     }
 
-    public String getRelUrl() {
-        return relUrl;
-    }
-
     public void setRelUrl(String relUrl) {
         this.relUrl = relUrl;
     }
@@ -121,14 +118,6 @@ public class Link implements Node, Comparable<Link> {
         this.html = html;
     }
 
-
-    public String getHtml() {
-        return html;
-    }
-
-    public Site getSite() {
-        return site;
-    }
 
     public void setSite(Site site) {
         this.site = site;

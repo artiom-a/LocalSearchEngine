@@ -9,15 +9,14 @@ import club.dagomys.siteparcer.src.entity.response.SearchData;
 import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
-import club.dagomys.siteparcer.src.repos.LemmaRepository;
-import club.dagomys.siteparcer.src.repos.PageRepository;
-import club.dagomys.siteparcer.src.repos.SearchIndexRepository;
-import club.dagomys.siteparcer.src.repos.SiteRepository;
+import club.dagomys.siteparcer.src.repos.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -29,7 +28,6 @@ import java.util.stream.Collectors;
 @Service
 public class SearchService {
     private final Logger mainLogger = LogManager.getLogger(SearchService.class);
-    private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
     private Site site;
 
     @Autowired
@@ -47,25 +45,27 @@ public class SearchService {
     private LemmaCounter counter;
 
 
-    public SearchResponse search(SearchRequest searchLine, String site) {
+
+    public SearchResponse search(SearchRequest searchLine, String site, Pageable pageable) {
         SearchResponse response = new SearchResponse();
         List<Page> findPages = new ArrayList<>();
         List<Lemma> findLemmas = new ArrayList<>();
         Optional<Site> findSite = siteRepository.findByUrl(site);
         List<Lemma> requestLemmas = getLemmasFromRequest(searchLine);
-        Map<Site, List<Lemma>> test = getSiteLemmaMap(requestLemmas);
-
+        Map<Site, List<Lemma>> siteLemmaMap = getSiteLemmaMap(requestLemmas);
         if (findSite.isPresent()) {
             this.site = findSite.get();
             findLemmas.addAll(requestLemmas.stream().filter(lemma -> lemma.getSite().equals(this.site)).toList());
-            findPages.addAll(getSearchData(findLemmas));
+            findPages.addAll(getFindPages(findLemmas));
         } else {
-            test.forEach((s, l) -> {
-                findPages.addAll(getSearchData(l));
+            siteLemmaMap.forEach((s, l) -> {
+                findPages.addAll(getFindPages(l));
                 findLemmas.addAll(l);
             });
         }
-        List<SearchData> searchDataList = getRelRelevance(findPages, findLemmas);
+        List<SearchData> searchDataList = getRelevance(findPages, findLemmas);
+        org.springframework.data.domain.Page<SearchData> page
+                = new PageImpl<SearchData>(searchDataList, pageable, searchDataList.size());
         mainLogger.info("Поисковый запрос \t" + searchLine);
         if (searchDataList.isEmpty() || searchLine.isEmpty()) {
             response.setResult(false);
@@ -74,12 +74,14 @@ public class SearchService {
             response.setResult(true);
             response.setCount(searchDataList.size());
         }
-        response.setSearchData(searchDataList);
+
+
+        response.setSearchData(page.toList());
         mainLogger.info("RESPONSE " + response);
         return response;
     }
 
-    private List<Page> getSearchData(List<Lemma> findSiteLemmas) {
+    private List<Page> getFindPages(List<Lemma> findSiteLemmas) {
         Lemma minFreqLemma = getMinLemma(findSiteLemmas);
         List<Page> findPages = findIndexedPage(minFreqLemma);
         List<SearchIndex> indexingList = searchIndexRepository.findByLemmaOrderByRankDesc(minFreqLemma);
@@ -111,13 +113,11 @@ public class SearchService {
         string.append("<a href=\"");
         if (isAbsURL(page)) {
             string.append(page.getRelPath()).append("\">");
-            string.append(getTitle(page)).append("</a>");
-            return string.toString();
         } else {
             string.append(page.getSite().getUrl()).append(page.getRelPath().replaceFirst("/", "")).append("\">");
-            string.append(getTitle(page)).append("</a>");
-            return string.toString();
         }
+        string.append(getTitle(page)).append("</a>");
+        return string.toString();
 
     }
 
@@ -184,19 +184,15 @@ public class SearchService {
     private float getAbsRelevance(Page page, List<Lemma> lemmas) {
         float r = 0f;
         for (Lemma lemma : lemmas) {
-            SearchIndex searchIndex = null;
-            try {
-                searchIndex = searchIndexRepository.findByPageAndLemma(page, lemma).get();
-                r = r + searchIndex.getRank();
-            } catch (Throwable e) {
-                mainLogger.error(e.getMessage());
+            Optional<SearchIndex> searchIndex = searchIndexRepository.findByPageAndLemma(page, lemma);
+            if (searchIndex.isPresent()) {
+                r = r + searchIndex.get().getRank();
             }
-
         }
         return r;
     }
 
-    private List<SearchData> getRelRelevance(List<Page> pageList, List<Lemma> lemmaList) {
+    private List<SearchData> getRelevance(List<Page> pageList, List<Lemma> lemmaList) {
         float maxRel = 0f;
         Map<Page, Float> pageAbsRelevance = new HashMap<>();
         List<SearchData> pageRelRelevance = new ArrayList<>();
@@ -212,6 +208,7 @@ public class SearchService {
             Page p = abs.getKey();
             float relevance = abs.getValue();
             pageRelRelevance.add(new SearchData(p, getTitle(p), getSnippet(p, lemmaList), relevance / maxRel));
+//            searchDataRepository.save(new SearchData(p, getTitle(p), getSnippet(p, lemmaList), relevance / maxRel));
         }
         Collections.sort(pageRelRelevance);
         return pageRelRelevance;
@@ -233,7 +230,7 @@ public class SearchService {
             });
             deleteCommonLemmas(lemmaList);
         } catch (IOException e) {
-            e.printStackTrace();
+            mainLogger.error(e.getMessage());
         }
         mainLogger.info("FIND LEMMAS \t" + lemmaList);
         return lemmaList;
@@ -282,7 +279,7 @@ public class SearchService {
     }
 
     private boolean isAbsURL(Page page) {
-        Pattern urlPattern = Pattern.compile("(https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,})");
+        Pattern urlPattern = Pattern.compile("(https?://(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.\\S{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.\\S{2,}|https?://(?:www\\.|(?!www))[a-zA-Z0-9]+\\.\\S{2,}|www\\.[a-zA-Z0-9]+\\.\\S{2,})");
         return
                 urlPattern.matcher(page.getRelPath()).find();
     }
