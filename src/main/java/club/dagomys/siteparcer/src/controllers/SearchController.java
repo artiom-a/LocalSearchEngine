@@ -3,6 +3,7 @@ package club.dagomys.siteparcer.src.controllers;
 import club.dagomys.siteparcer.src.entity.request.SearchRequest;
 import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 import club.dagomys.siteparcer.src.services.SearchService;
+import jakarta.validation.Valid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+
 
 @Controller
 @RequestMapping("/new")
@@ -29,11 +30,11 @@ public class SearchController {
         return "/frontend/search";
     }
 
-    @PostMapping("/search")
+    @PostMapping("/new/search")
     public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model,
                          @RequestParam(name = "site", required = false, defaultValue = "all") String site,
-                         @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
-                         @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit) {
+                         @RequestParam(value = "offset", required = false, defaultValue = "0") String offset,
+                         @RequestParam(value = "limit", required = false, defaultValue = "20") String limit) {
         if (!errors.hasErrors()) {
 //            searchResponse = searchService.search(searchRequest, site);
             return "redirect:/new/search";

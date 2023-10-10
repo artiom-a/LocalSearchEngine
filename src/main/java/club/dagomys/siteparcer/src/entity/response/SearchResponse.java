@@ -1,5 +1,6 @@
 package club.dagomys.siteparcer.src.entity.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,7 +14,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SearchResponse extends Response {
-    private int count;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Integer count;
     @JsonProperty("data")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<SearchData> searchData;
 }

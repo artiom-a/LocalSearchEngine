@@ -8,8 +8,12 @@ import club.dagomys.siteparcer.src.entity.request.SearchRequest;
 import club.dagomys.siteparcer.src.entity.response.SearchData;
 import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
+import club.dagomys.siteparcer.src.exception.SearchEngineException;
 import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
-import club.dagomys.siteparcer.src.repos.*;
+import club.dagomys.siteparcer.src.repos.LemmaRepository;
+import club.dagomys.siteparcer.src.repos.PageRepository;
+import club.dagomys.siteparcer.src.repos.SearchIndexRepository;
+import club.dagomys.siteparcer.src.repos.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -18,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.Errors;
 
 import java.io.IOException;
 import java.util.*;
@@ -45,40 +50,44 @@ public class SearchService {
     private LemmaCounter counter;
 
 
-
-    public SearchResponse search(SearchRequest searchLine, String site, Pageable pageable) {
+    public SearchResponse search(SearchRequest searchLine, String site, Pageable pageable, Errors errors) throws SearchEngineException {
         SearchResponse response = new SearchResponse();
         List<Page> findPages = new ArrayList<>();
         List<Lemma> findLemmas = new ArrayList<>();
         Optional<Site> findSite = siteRepository.findByUrl(site);
-        List<Lemma> requestLemmas = getLemmasFromRequest(searchLine);
-        Map<Site, List<Lemma>> siteLemmaMap = getSiteLemmaMap(requestLemmas);
-        if (findSite.isPresent()) {
-            this.site = findSite.get();
-            findLemmas.addAll(requestLemmas.stream().filter(lemma -> lemma.getSite().equals(this.site)).toList());
-            findPages.addAll(getFindPages(findLemmas));
-        } else {
-            siteLemmaMap.forEach((s, l) -> {
-                findPages.addAll(getFindPages(l));
-                findLemmas.addAll(l);
-            });
-        }
-        List<SearchData> searchDataList = getRelevance(findPages, findLemmas);
-        org.springframework.data.domain.Page<SearchData> page
-                = new PageImpl<SearchData>(searchDataList, pageable, searchDataList.size());
-        mainLogger.info("Поисковый запрос \t" + searchLine);
-        if (searchDataList.isEmpty() || searchLine.isEmpty()) {
+        try {
+            if (!errors.hasErrors()) {
+                List<Lemma> requestLemmas = getLemmasFromRequest(searchLine);
+                Map<Site, List<Lemma>> siteLemmaMap = getSiteLemmaMap(requestLemmas);
+                if (findSite.isPresent()) {
+                    this.site = findSite.get();
+                    findLemmas.addAll(requestLemmas.stream().filter(lemma -> lemma.getSite().equals(this.site)).toList());
+                    findPages.addAll(getFindPages(findLemmas));
+                } else {
+                    siteLemmaMap.forEach((s, l) -> {
+                        findPages.addAll(getFindPages(l));
+                        findLemmas.addAll(l);
+                    });
+                }
+                List<SearchData> searchDataList = getRelevance(findPages, findLemmas);
+                org.springframework.data.domain.Page<SearchData> page = findPaginated(searchDataList, pageable);
+
+                mainLogger.info("Поисковый запрос \t" + searchLine);
+                response.setResult(true);
+                response.setCount(searchDataList.size());
+                response.setSearchData(findPaginated(page.toList(), pageable).toList());
+                mainLogger.info("RESPONSE " + response);
+            } else throw new SearchEngineException(Objects.requireNonNull(errors.getFieldError()).getDefaultMessage());
+        } catch (SearchEngineException ex) {
             response.setResult(false);
-            response.setError("По запросу ничего не найдено или задан пустой поисковый запрос");
-        } else {
-            response.setResult(true);
-            response.setCount(searchDataList.size());
+            response.setError(errors.getFieldError().getDefaultMessage());
+            mainLogger.error(ex.getMessage());
         }
-
-
-        response.setSearchData(page.toList());
-        mainLogger.info("RESPONSE " + response);
         return response;
+    }
+
+    public org.springframework.data.domain.Page<SearchData> findPaginated(List<SearchData> searchData, Pageable pageable) {
+        return new PageImpl<>(searchData, pageable, searchData.size());
     }
 
     private List<Page> getFindPages(List<Lemma> findSiteLemmas) {

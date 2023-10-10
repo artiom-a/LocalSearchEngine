@@ -143,7 +143,7 @@ public class MainService {
 
         List<Site> siteList = siteRepository.findAll();
 
-        if (siteList.size() == 0) {
+        if (siteList.isEmpty()) {
             return new DashboardResponse();
         }
 
