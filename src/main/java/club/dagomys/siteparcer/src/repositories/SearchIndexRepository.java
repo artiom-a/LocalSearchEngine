@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src.repos;
+package club.dagomys.siteparcer.src.repositories;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;

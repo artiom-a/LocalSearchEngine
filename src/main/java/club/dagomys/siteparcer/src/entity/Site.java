@@ -1,5 +1,6 @@
 package club.dagomys.siteparcer.src.entity;
 
+import club.dagomys.siteparcer.src.dto.Link;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,9 +1,10 @@
 package club.dagomys.siteparcer.src.controllers;
 
-import club.dagomys.siteparcer.src.entity.Link;
+import club.dagomys.siteparcer.src.dto.Link;
+import club.dagomys.siteparcer.src.dto.request.URLRequest;
 import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.entity.request.URLRequest;
 import club.dagomys.siteparcer.src.services.MainService;
+import jakarta.validation.Valid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +12,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
 
 import java.util.concurrent.ExecutionException;
 

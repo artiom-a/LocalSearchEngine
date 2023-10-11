@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src.entity.response;
+package club.dagomys.siteparcer.src.dto.response;
 
 import club.dagomys.siteparcer.src.entity.SiteStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;

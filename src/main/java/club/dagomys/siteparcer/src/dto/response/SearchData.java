@@ -1,15 +1,12 @@
-package club.dagomys.siteparcer.src.entity.response;
+package club.dagomys.siteparcer.src.dto.response;
 
 import club.dagomys.siteparcer.src.entity.Page;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.annotation.Immutable;
-
-import java.io.Serializable;
 
 @Data
 @AllArgsConstructor

@@ -1,7 +1,8 @@
 package club.dagomys.siteparcer.src.controllers;
 
-import club.dagomys.siteparcer.src.entity.request.SearchRequest;
-import club.dagomys.siteparcer.src.entity.response.SearchResponse;
+import club.dagomys.siteparcer.src.dto.request.SearchRequest;
+import club.dagomys.siteparcer.src.dto.response.SearchResponse;
+import club.dagomys.siteparcer.src.exception.SearchEngineException;
 import club.dagomys.siteparcer.src.services.SearchService;
 import jakarta.validation.Valid;
 import org.apache.logging.log4j.LogManager;
@@ -24,19 +25,19 @@ public class SearchController {
     @Autowired
     private SearchService searchService;
 
-    @GetMapping("/new/search")
+    @GetMapping("/search")
     public String getSearchPage(Model model, @ModelAttribute("searchRequest") SearchRequest searchRequest) {
         model.addAttribute("indexList", searchResponse);
         return "/frontend/search";
     }
 
-    @PostMapping("/new/search")
+    @PostMapping("/search")
     public String search(@Valid @ModelAttribute("searchRequest") SearchRequest searchRequest, Errors errors, Model model,
                          @RequestParam(name = "site", required = false, defaultValue = "all") String site,
-                         @RequestParam(value = "offset", required = false, defaultValue = "0") String offset,
-                         @RequestParam(value = "limit", required = false, defaultValue = "20") String limit) {
+                         @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
+                         @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit) throws SearchEngineException {
         if (!errors.hasErrors()) {
-//            searchResponse = searchService.search(searchRequest, site);
+            searchResponse = searchService.search(searchRequest, site, offset, limit, errors );
             return "redirect:/new/search";
         } else {
             mainLogger.info(errors.getAllErrors());

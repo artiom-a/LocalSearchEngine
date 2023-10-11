@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src.entity;
+package club.dagomys.siteparcer.src.dto;
 
 public enum FieldSelector {
     TITLE,

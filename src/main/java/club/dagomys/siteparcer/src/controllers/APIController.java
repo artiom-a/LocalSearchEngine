@@ -1,11 +1,10 @@
 package club.dagomys.siteparcer.src.controllers;
 
-import club.dagomys.siteparcer.src.entity.request.SearchRequest;
-import club.dagomys.siteparcer.src.entity.request.URLRequest;
-import club.dagomys.siteparcer.src.entity.response.DashboardResponse;
-import club.dagomys.siteparcer.src.entity.response.Response;
-import club.dagomys.siteparcer.src.entity.response.SearchData;
-import club.dagomys.siteparcer.src.entity.response.SearchResponse;
+import club.dagomys.siteparcer.src.dto.request.SearchRequest;
+import club.dagomys.siteparcer.src.dto.request.URLRequest;
+import club.dagomys.siteparcer.src.dto.response.DashboardResponse;
+import club.dagomys.siteparcer.src.dto.response.Response;
+import club.dagomys.siteparcer.src.dto.response.SearchResponse;
 import club.dagomys.siteparcer.src.exception.SearchEngineException;
 import club.dagomys.siteparcer.src.services.MainService;
 import club.dagomys.siteparcer.src.services.SearchService;
@@ -15,15 +14,10 @@ import jakarta.validation.Valid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 @RestController
@@ -64,9 +58,7 @@ public class APIController {
             @RequestParam(name = "offset", required = false, defaultValue = "0") Integer offset,
             @RequestParam(name = "limit", required = false, defaultValue = "20") Integer limit
     ) throws SearchEngineException {
-        Pageable pageable = PageRequest.of(offset, limit);
-
-        SearchResponse response = searchService.search(searchRequestQuery, site, pageable, errors);
+        SearchResponse response = searchService.search(searchRequestQuery, site, offset, limit, errors);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

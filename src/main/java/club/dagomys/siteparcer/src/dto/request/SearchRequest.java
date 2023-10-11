@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src.entity.request;
+package club.dagomys.siteparcer.src.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

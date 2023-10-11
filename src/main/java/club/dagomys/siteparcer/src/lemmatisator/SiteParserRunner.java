@@ -1,5 +1,7 @@
 package club.dagomys.siteparcer.src.lemmatisator;
 
+import club.dagomys.siteparcer.src.dto.FieldSelector;
+import club.dagomys.siteparcer.src.dto.Link;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;

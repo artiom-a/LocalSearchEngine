@@ -1,7 +1,7 @@
-package club.dagomys.siteparcer.src.repos;
+package club.dagomys.siteparcer.src.repositories;
 
+import club.dagomys.siteparcer.src.dto.FieldSelector;
 import club.dagomys.siteparcer.src.entity.Field;
-import club.dagomys.siteparcer.src.entity.FieldSelector;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,5 +1,6 @@
-package club.dagomys.siteparcer.src.entity;
+package club.dagomys.siteparcer.src.dto;
 
+import club.dagomys.siteparcer.src.entity.Site;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

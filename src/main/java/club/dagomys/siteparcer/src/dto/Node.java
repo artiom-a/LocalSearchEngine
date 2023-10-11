@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src.entity;
+package club.dagomys.siteparcer.src.dto;
 
 import java.util.Set;
 

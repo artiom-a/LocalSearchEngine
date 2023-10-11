@@ -1,4 +1,4 @@
-package club.dagomys.siteparcer.src.entity.response;
+package club.dagomys.siteparcer.src.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

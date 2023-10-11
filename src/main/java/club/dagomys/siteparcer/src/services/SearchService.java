@@ -1,26 +1,25 @@
 package club.dagomys.siteparcer.src.services;
 
+import club.dagomys.siteparcer.src.dto.request.SearchRequest;
+import club.dagomys.siteparcer.src.dto.response.SearchData;
+import club.dagomys.siteparcer.src.dto.response.SearchResponse;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.SearchIndex;
 import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.entity.request.SearchRequest;
-import club.dagomys.siteparcer.src.entity.response.SearchData;
-import club.dagomys.siteparcer.src.entity.response.SearchResponse;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.SearchEngineException;
 import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
-import club.dagomys.siteparcer.src.repos.LemmaRepository;
-import club.dagomys.siteparcer.src.repos.PageRepository;
-import club.dagomys.siteparcer.src.repos.SearchIndexRepository;
-import club.dagomys.siteparcer.src.repos.SiteRepository;
+import club.dagomys.siteparcer.src.repositories.LemmaRepository;
+import club.dagomys.siteparcer.src.repositories.PageRepository;
+import club.dagomys.siteparcer.src.repositories.SearchIndexRepository;
+import club.dagomys.siteparcer.src.repositories.SiteRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.Errors;
 
@@ -50,7 +49,7 @@ public class SearchService {
     private LemmaCounter counter;
 
 
-    public SearchResponse search(SearchRequest searchLine, String site, Pageable pageable, Errors errors) throws SearchEngineException {
+    public SearchResponse search(SearchRequest searchLine, String site, int offset, int limit, Errors errors) throws SearchEngineException {
         SearchResponse response = new SearchResponse();
         List<Page> findPages = new ArrayList<>();
         List<Lemma> findLemmas = new ArrayList<>();
@@ -70,24 +69,26 @@ public class SearchService {
                     });
                 }
                 List<SearchData> searchDataList = getRelevance(findPages, findLemmas);
-                org.springframework.data.domain.Page<SearchData> page = findPaginated(searchDataList, pageable);
 
                 mainLogger.info("Поисковый запрос \t" + searchLine);
                 response.setResult(true);
                 response.setCount(searchDataList.size());
-                response.setSearchData(findPaginated(page.toList(), pageable).toList());
+                response.setSearchData(getPageFromList(searchDataList, offset, limit).toList());
                 mainLogger.info("RESPONSE " + response);
             } else throw new SearchEngineException(Objects.requireNonNull(errors.getFieldError()).getDefaultMessage());
         } catch (SearchEngineException ex) {
             response.setResult(false);
-            response.setError(errors.getFieldError().getDefaultMessage());
+            response.setError(ex.getMessage());
             mainLogger.error(ex.getMessage());
         }
         return response;
     }
 
-    public org.springframework.data.domain.Page<SearchData> findPaginated(List<SearchData> searchData, Pageable pageable) {
-        return new PageImpl<>(searchData, pageable, searchData.size());
+    public org.springframework.data.domain.Page<SearchData> getPageFromList(List<SearchData> searchData, int offset, int pageSize) throws SearchEngineException {
+        if (offset < searchData.size()) {
+            int end = Math.min((offset + pageSize), searchData.size());
+            return new PageImpl<>(searchData.subList(offset, end));
+        } else throw new SearchEngineException("Неверные параметры пагинации");
     }
 
     private List<Page> getFindPages(List<Lemma> findSiteLemmas) {
@@ -201,7 +202,7 @@ public class SearchService {
         return r;
     }
 
-    private List<SearchData> getRelevance(List<Page> pageList, List<Lemma> lemmaList) {
+    private List<SearchData> getRelevance(List<Page> pageList, List<Lemma> lemmaList) throws SearchEngineException {
         float maxRel = 0f;
         Map<Page, Float> pageAbsRelevance = new HashMap<>();
         List<SearchData> pageRelRelevance = new ArrayList<>();
@@ -217,7 +218,9 @@ public class SearchService {
             Page p = abs.getKey();
             float relevance = abs.getValue();
             pageRelRelevance.add(new SearchData(p, getTitle(p), getSnippet(p, lemmaList), relevance / maxRel));
-//            searchDataRepository.save(new SearchData(p, getTitle(p), getSnippet(p, lemmaList), relevance / maxRel));
+        }
+        if (pageRelRelevance.isEmpty()){
+            throw new SearchEngineException("По вашему поиску ничего не найдено");
         }
         Collections.sort(pageRelRelevance);
         return pageRelRelevance;

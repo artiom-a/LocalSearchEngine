@@ -32,7 +32,7 @@ Download and install locally on your computer or create a database on an existin
 [MySQL](https://dev.mysql.com/downloads/mysql/)
 > Note: In this example, we are using the database name search_engine, username and password skillbox_engine
 > 
-```java 
+```yaml 
 spring:
 datasource:
 url: jdbc:mysql://localhost:3306/search_engine

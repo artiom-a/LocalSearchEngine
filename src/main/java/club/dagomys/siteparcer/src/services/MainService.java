@@ -2,14 +2,20 @@ package club.dagomys.siteparcer.src.services;
 
 
 import club.dagomys.siteparcer.src.config.AppConfig;
-import club.dagomys.siteparcer.src.entity.*;
-import club.dagomys.siteparcer.src.entity.request.URLRequest;
-import club.dagomys.siteparcer.src.entity.response.*;
+import club.dagomys.siteparcer.src.dto.FieldSelector;
+import club.dagomys.siteparcer.src.dto.Link;
+import club.dagomys.siteparcer.src.dto.request.URLRequest;
+import club.dagomys.siteparcer.src.dto.response.*;
+import club.dagomys.siteparcer.src.entity.Field;
+import club.dagomys.siteparcer.src.entity.Page;
+import club.dagomys.siteparcer.src.entity.Site;
+import club.dagomys.siteparcer.src.entity.SiteStatus;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import club.dagomys.siteparcer.src.lemmatisator.SiteParserRunner;
-import club.dagomys.siteparcer.src.repos.*;
+import club.dagomys.siteparcer.src.repositories.*;
+import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
@@ -45,6 +51,7 @@ public class MainService {
     @Autowired
     private LemmaRepository lemmaRepository;
 
+    @Getter
     @Autowired
     private SearchIndexRepository searchIndexRepository;
 
@@ -57,9 +64,11 @@ public class MainService {
     @Autowired
     private ThreadPoolTaskExecutor asyncService;
 
+    @Getter
     @Autowired
     private ForkJoinPool forkJoinPool;
 
+    @Getter
     @Autowired
     private AppConfig appConfig;
 
@@ -155,7 +164,7 @@ public class MainService {
                 allLemmas.updateAndGet(v -> v + lemmas);
                 details.add(new Detail(site.getUrl(), site.getName(), site.getStatus(), site.getStatusTime(), site.getLastError(), pages, lemmas));
             } catch (LemmaNotFoundException e) {
-                e.printStackTrace();
+                mainLogger.error(e.getMessage());
             }
         });
         total.setLemmaCount(allLemmas.get());
@@ -225,7 +234,7 @@ public class MainService {
                     }
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    mainLogger.error(e.getMessage());
                 }
             }
         });
@@ -253,27 +262,14 @@ public class MainService {
         return siteRepository;
     }
 
-    public SearchIndexRepository getSearchIndexRepository() {
-        return searchIndexRepository;
-    }
-
-    public ForkJoinPool getForkJoinPool() {
-        return forkJoinPool;
-    }
-
-    public AppConfig getAppConfig() {
-        return appConfig;
-    }
-
 
     /**
-     * @param fieldService
      * @param siteService  добавляет сайты из конфигурационного файла в БД. Если поле 'name' isEmpty,
      *                     то вместо названия сайта подставляется поле title главной страницы сайта.
      * @return добавляет 2 статические записи для полей на страницах сайтов со значениями по умолчанию
      */
     @Bean
-    public CommandLineRunner saveSiteToDb(SiteRepository siteService, FieldRepository fieldService) throws SiteIndexingException {
+    public CommandLineRunner saveSiteToDb(SiteRepository siteService) throws SiteIndexingException {
         return (String[] args) -> {
             Field title = new Field("title", FieldSelector.TITLE, 1f);
             Field body = new Field("body", FieldSelector.BODY, 0.8f);

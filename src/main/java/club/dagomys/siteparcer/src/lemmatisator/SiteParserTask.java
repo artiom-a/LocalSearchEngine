@@ -1,6 +1,6 @@
 package club.dagomys.siteparcer.src.lemmatisator;
 
-import club.dagomys.siteparcer.src.entity.Link;
+import club.dagomys.siteparcer.src.dto.Link;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
