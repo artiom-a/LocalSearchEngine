@@ -4,6 +4,7 @@ import club.dagomys.siteparcer.src.entity.Site;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -12,18 +13,24 @@ import java.util.TreeSet;
 @Component
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class Link implements Node, Comparable<Link> {
+
     private String URL;
-    @Getter
+
     private String relUrl;
+
     private Set<Link> childSet;
+
     private Link parentLink;
-    @Getter
+
     private int layer;
+
     private int statusCode;
-    @Getter
+
     private String html;
-    @Getter
+
     private Site site;
 
     public Link(String URL) {
@@ -58,16 +65,6 @@ public class Link implements Node, Comparable<Link> {
     }
 
 
-    @Override
-    public void addChild(Link child) {
-        Link root = getRootLink();
-        if (!root.contains(child.getValue())) {
-            child.setParentLink(this);
-            childSet.add(child);
-        }
-    }
-
-
     private void setParentLink(Link parent) {
         this.parentLink = parent;
         this.layer = setLayer();
@@ -92,9 +89,6 @@ public class Link implements Node, Comparable<Link> {
         return statusCode;
     }
 
-    public void setStatusCode(int statusCode) {
-        this.statusCode = statusCode;
-    }
 
     private Link getRootLink() {
         return parentLink == null ? this : parentLink.getRootLink();
@@ -110,20 +104,6 @@ public class Link implements Node, Comparable<Link> {
     public String getValue() {
         return URL;
     }
-
-    public void setRelUrl(String relUrl) {
-        this.relUrl = relUrl;
-    }
-
-    public void setHtml(String html) {
-        this.html = html;
-    }
-
-
-    public void setSite(Site site) {
-        this.site = site;
-    }
-
 
     @Override
     public int compareTo(Link o) {

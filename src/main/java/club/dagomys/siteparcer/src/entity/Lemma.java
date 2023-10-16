@@ -16,11 +16,12 @@ import java.util.Objects;
 @Table(indexes = {@Index(name = "lemma_index", columnList = "lemma")})
 public class Lemma implements Comparable<Lemma> {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
     private String lemma;
+
     private Integer frequency;
 
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)

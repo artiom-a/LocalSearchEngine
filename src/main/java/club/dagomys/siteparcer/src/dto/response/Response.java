@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class Response {
+
     private boolean result;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String error;
 }

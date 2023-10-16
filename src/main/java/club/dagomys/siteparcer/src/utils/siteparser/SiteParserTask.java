@@ -1,10 +1,10 @@
-package club.dagomys.siteparcer.src.lemmatisator;
+package club.dagomys.siteparcer.src.utils.siteparser;
 
 import club.dagomys.siteparcer.src.dto.Link;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
-import club.dagomys.siteparcer.src.services.MainService;
+import club.dagomys.siteparcer.src.services.IndexingService;
 import lombok.NoArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,17 +23,16 @@ import java.util.regex.Pattern;
 public class SiteParserTask extends RecursiveTask<Link> {
     private Link rootURL;
     private Site site;
-
-    private MainService mainService;
+    private IndexingService indexingService;
     private static final Logger mainLogger = LogManager.getLogger(SiteParserTask.class);
 
     public SiteParserTask(Link link) throws PageIndexingException {
         this.rootURL = link;
     }
 
-    public SiteParserTask(Link rootLink, MainService mainService, Site site) throws SiteIndexingException {
+    public SiteParserTask(Link rootLink, IndexingService indexingService, Site site) throws SiteIndexingException {
         this.rootURL = rootLink;
-        this.mainService = mainService;
+        this.indexingService = indexingService;
         this.site = site;
     }
 
@@ -49,8 +48,8 @@ public class SiteParserTask extends RecursiveTask<Link> {
 
             connLink = connectToLink(rootURL);
             for (Link child : connLink.getChildren()) {
-                if (this.mainService.isIndexing()) {
-                    SiteParserTask childParser = new SiteParserTask(child, mainService, site);
+                if (this.indexingService.getIsIndexing().get()) {
+                    SiteParserTask childParser = new SiteParserTask(child, indexingService, site);
                     childParser.fork();
                     childParserList.add(childParser);
                 } else throw new SiteIndexingException("Parsing is stopped " + site.getUrl());
@@ -58,7 +57,7 @@ public class SiteParserTask extends RecursiveTask<Link> {
             }
 
             for (SiteParserTask childTask : childParserList) {
-                if (this.mainService.isIndexing()) {
+                if (this.indexingService.getIsIndexing().get()) {
                     childTask.compute();
                     childTask.join();
                 } else throw new SiteIndexingException("Compute is stopped " + site.getUrl());
@@ -66,6 +65,7 @@ public class SiteParserTask extends RecursiveTask<Link> {
 
         } catch (SiteIndexingException e) {
             mainLogger.error(e.getMessage());
+            site.setLastError(e.getMessage());
         }
         return connLink;
     }
@@ -87,7 +87,7 @@ public class SiteParserTask extends RecursiveTask<Link> {
             Thread.sleep(100);
             Document siteFile = Jsoup
                     .connect(connectedLink.getValue())
-                    .userAgent(mainService.getAppConfig().getUserAgent())
+                    .userAgent(indexingService.getAppConfig().getUserAgent())
                     .referrer("http://www.google.com")
                     .ignoreHttpErrors(false)
                     .get();
@@ -115,7 +115,7 @@ public class SiteParserTask extends RecursiveTask<Link> {
 
             });
         } catch (Exception e) {
-            mainService.getSiteService().saveAndFlush(site);
+            indexingService.getSiteRepository().saveAndFlush(site);
             mainLogger.error(e.getMessage());
         }
         return connectedLink;

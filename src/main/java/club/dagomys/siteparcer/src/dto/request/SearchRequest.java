@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 @AllArgsConstructor
 @Validated
 public class SearchRequest {
+
     @NotBlank(message = "Поле не должно быть пустым")
     private String searchLine;
 }

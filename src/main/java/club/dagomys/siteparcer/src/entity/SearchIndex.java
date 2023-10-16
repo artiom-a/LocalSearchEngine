@@ -1,21 +1,35 @@
 package club.dagomys.siteparcer.src.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import jakarta.persistence.*;
-
-@Data
+@Getter
+@Setter
+@RequiredArgsConstructor
 @ToString
 @Entity
-@NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "`index`")
 public class SearchIndex {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @JoinColumn(name = "page_id")
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Page page;
+
+    @JoinColumn(name = "lemma_id")
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Lemma lemma;
+
+    @Column(name = "`rank`")
+    private float rank;
 
     public SearchIndex(Page page, Lemma lemma, float rank) {
         this.page = page;
@@ -23,18 +37,19 @@ public class SearchIndex {
         this.rank = rank;
     }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-    @JoinColumn(name = "page_id")
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Page page;
-    @JoinColumn(name = "lemma_id")
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Lemma lemma;
-    @Column(name = "`rank`")
-    private float rank;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
+        SearchIndex that = (SearchIndex) o;
+
+        if (!page.equals(that.page)) return false;
+        return lemma.equals(that.lemma);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

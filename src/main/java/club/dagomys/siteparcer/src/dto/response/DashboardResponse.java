@@ -8,5 +8,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DashboardResponse extends Response {
+
     private Statistic statistics;
 }

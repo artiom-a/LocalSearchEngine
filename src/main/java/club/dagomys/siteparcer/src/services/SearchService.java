@@ -9,11 +9,11 @@ import club.dagomys.siteparcer.src.entity.SearchIndex;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.SearchEngineException;
-import club.dagomys.siteparcer.src.lemmatisator.LemmaCounter;
 import club.dagomys.siteparcer.src.repositories.LemmaRepository;
 import club.dagomys.siteparcer.src.repositories.PageRepository;
 import club.dagomys.siteparcer.src.repositories.SearchIndexRepository;
 import club.dagomys.siteparcer.src.repositories.SiteRepository;
+import club.dagomys.siteparcer.src.utils.lemmatizator.LemmaCounter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -219,7 +219,7 @@ public class SearchService {
             float relevance = abs.getValue();
             pageRelRelevance.add(new SearchData(p, getTitle(p), getSnippet(p, lemmaList), relevance / maxRel));
         }
-        if (pageRelRelevance.isEmpty()){
+        if (pageRelRelevance.isEmpty()) {
             throw new SearchEngineException("По вашему поиску ничего не найдено");
         }
         Collections.sort(pageRelRelevance);

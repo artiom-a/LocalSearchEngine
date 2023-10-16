@@ -13,8 +13,11 @@ import java.util.List;
 @ConfigurationProperties("app-configuration")
 @Data
 public class AppConfig {
+
     private Logger mainLogger = LogManager.getLogger(AppConfig.class);
+
     private List<Site> siteList;
+
     private String UserAgent;
 
 }

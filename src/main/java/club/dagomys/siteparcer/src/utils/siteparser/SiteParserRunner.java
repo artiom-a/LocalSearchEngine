@@ -1,11 +1,12 @@
-package club.dagomys.siteparcer.src.lemmatisator;
+package club.dagomys.siteparcer.src.utils.siteparser;
 
 import club.dagomys.siteparcer.src.dto.FieldSelector;
 import club.dagomys.siteparcer.src.dto.Link;
 import club.dagomys.siteparcer.src.entity.*;
 import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
-import club.dagomys.siteparcer.src.services.MainService;
+import club.dagomys.siteparcer.src.services.IndexingService;
+import club.dagomys.siteparcer.src.utils.lemmatizator.LemmaCounter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +20,6 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RecursiveTask;
 
 @Component
@@ -27,22 +27,17 @@ public class SiteParserRunner implements Runnable {
     private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     private final Site site;
     private volatile boolean isRunning;
-
     @Autowired
-    private final MainService mainService;
-
-    @Autowired
-    private ExecutorService asyncService;
-
+    private final IndexingService indexingService;
     private final Field title;
     private final Field body;
 
 
-    public SiteParserRunner(Site site, MainService mainService) {
-        this.mainService = mainService;
+    public SiteParserRunner(Site site, IndexingService indexingService) {
+        this.indexingService = indexingService;
         this.site = site;
-        title = mainService.getFieldService().findFieldBySelector(FieldSelector.TITLE).get();
-        body = mainService.getFieldService().findFieldBySelector(FieldSelector.BODY).get();
+        title = indexingService.getFieldRepository().findFieldBySelector(FieldSelector.TITLE).get();
+        body = indexingService.getFieldRepository().findFieldBySelector(FieldSelector.BODY).get();
     }
 
 
@@ -51,7 +46,7 @@ public class SiteParserRunner implements Runnable {
         this.isRunning = true;
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(LocalDateTime.now());
-        mainService.getSiteService().saveAndFlush(this.site);
+        indexingService.getSiteRepository().saveAndFlush(this.site);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
         Calendar startTime = Calendar.getInstance();
         mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
@@ -68,13 +63,13 @@ public class SiteParserRunner implements Runnable {
                 mainLogger.info("Duration " + duration.toString());
                 site.setStatusTime(LocalDateTime.now());
                 site.setStatus(SiteStatus.INDEXED);
-                mainService.getSiteService().saveAndFlush(this.site);
+                indexingService.getSiteRepository().saveAndFlush(this.site);
             } catch (SiteIndexingException | LemmaNotFoundException | IOException e) {
                 this.isRunning = false;
                 this.site.setStatus(SiteStatus.FAILED);
                 this.site.setLastError(e.getMessage());
                 mainLogger.error(e.getMessage() + " " + "Поток был прерван пользователем");
-                mainService.getSiteService().saveAndFlush(site);
+                indexingService.getSiteRepository().saveAndFlush(site);
             }
 
         }
@@ -85,9 +80,9 @@ public class SiteParserRunner implements Runnable {
 
     private void countLemmaFrequency() throws SiteIndexingException, IOException {
         Map<String, Integer> indexedPagesLemmas = new TreeMap<>();
-        for (Page page : mainService.getPageService().findAllPageBySite(this.site).get()) {
+        for (Page page : indexingService.getPageRepository().findAllPageBySite(this.site).get()) {
             Map<String, Lemma> indexedPageMap = countLemmasOnPage(page);
-            if (mainService.isIndexing()) {
+            if (indexingService.getIsIndexing().get()) {
                 mainLogger.info("Start parsing \t" + page.getRelPath());
                 indexedPageMap.forEach((key, value) -> {
                     if (indexedPagesLemmas.containsKey(key)) {
@@ -107,7 +102,7 @@ public class SiteParserRunner implements Runnable {
         Set<Lemma> lemmaList = new TreeSet<>();
         lemmaMap.forEach((key, value) -> {
             try {
-                if (mainService.isIndexing()) {
+                if (indexingService.getIsIndexing().get()) {
                     Lemma lemma = new Lemma(key, value);
                     lemma.setSite(site);
                     lemmaList.add(lemma);
@@ -116,16 +111,16 @@ public class SiteParserRunner implements Runnable {
                 mainLogger.error(e.getMessage());
             }
         });
-        mainService.getLemmaService().deleteLemmaBySite(site);
-        mainService.getLemmaService().saveAll(lemmaList);
+        indexingService.getLemmaRepository().deleteLemmaBySite(site);
+        indexingService.getLemmaRepository().saveAll(lemmaList);
     }
 
     private Map<String, Lemma> countLemmasOnPage(@NotNull Page indexingPage) throws SiteIndexingException, IOException {
         Map<String, Lemma> lemmas = new TreeMap<>();
         if (indexingPage.getContent() != null) {
             Document doc = Jsoup.parse(indexingPage.getContent());
-            if (mainService.isIndexing()) {
-                for (Field field : mainService.getFieldService().findAll()) {
+            if (indexingService.getIsIndexing().get()) {
+                for (Field field : indexingService.getFieldRepository().findAll()) {
                     LemmaCounter lemmaCounter = new LemmaCounter(doc.getElementsByTag(field.getName()).text());
                     lemmaCounter.countLemmas().forEach((key, value) -> lemmas.merge(key, new Lemma(key, value), Lemma::sum));
                 }
@@ -182,13 +177,13 @@ public class SiteParserRunner implements Runnable {
     }
 
     private void createSearchSiteIndexes() throws SiteIndexingException, LemmaNotFoundException {
-        List<Lemma> lemmas = mainService.getLemmaService().findAllLemmaBySite(site).orElseThrow();
+        List<Lemma> lemmas = indexingService.getLemmaRepository().findAllLemmaBySite(site).orElseThrow();
         List<SearchIndex> searchIndexList = new ArrayList<>();
-        for (Page page : mainService.getPageService().findAllPageBySite(site).get()) {
-            mainService.getSearchIndexRepository().deleteByPage(page);
+        for (Page page : indexingService.getPageRepository().findAllPageBySite(site).get()) {
+            indexingService.getSearchIndexRepository().deleteByPage(page);
             long startTime = System.currentTimeMillis();
-            mainLogger.info("Start parsing \t" + this.site.getUrl() + "" + page.getRelPath());
-            if (mainService.isIndexing()) {
+            mainLogger.info("Start parsing \t" + this.site.getUrl() + page.getRelPath());
+            if (indexingService.getIsIndexing().get()) {
                 Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
                 indexedPageMap.forEach((key, value) -> {
                     Lemma findLemma = lemmas.parallelStream().filter(l -> l.getLemma().equalsIgnoreCase(key)).findFirst().orElseThrow();
@@ -201,41 +196,37 @@ public class SiteParserRunner implements Runnable {
             mainLogger.warn(page.getRelPath() + " indexing is complete");
             mainLogger.warn("End parsing {} ms \t" + page.getRelPath(), endTime - startTime);
         }
-        mainService.getSearchIndexRepository().saveAll(searchIndexList);
+        indexingService.getSearchIndexRepository().saveAll(searchIndexList);
     }
 
 
     private Link getSiteLinks() throws SiteIndexingException {
-        if (mainService.isIndexing()) {
+        if (indexingService.getIsIndexing().get()) {
             Link rootLink = new Link(this.site.getUrl());
-            mainService.getSiteService().saveAndFlush(this.site);
-            RecursiveTask<Link> forkJoinTask = new SiteParserTask(rootLink, mainService, this.site);
-            return mainService.getForkJoinPool().invoke(forkJoinTask);
+            indexingService.getSiteRepository().saveAndFlush(this.site);
+            RecursiveTask<Link> forkJoinTask = new SiteParserTask(rootLink, indexingService, this.site);
+            return indexingService.getForkJoinPool().invoke(forkJoinTask);
         } else throw new SiteIndexingException("Парсинг ссылок остановлен " + this.site.getUrl());
     }
 
 
     private void saveToDatabase(Link link) throws SiteIndexingException {
         if (link.getHtml() != null) {
-            Optional<Page> root = mainService.getPageService().findByRelPathAndSite(link.getRelUrl(), link.getSite());
+            Optional<Page> root = indexingService.getPageRepository().findByRelPathAndSite(link.getRelUrl(), link.getSite());
             if (root.isPresent()) {
-                mainService.getPageService().saveAndFlush(root.get());
+                indexingService.getPageRepository().saveAndFlush(root.get());
             } else {
-                mainService.getPageService().saveAndFlush(new Page(link));
+                indexingService.getPageRepository().saveAndFlush(new Page(link));
             }
         }
         for (Link l : link.getChildren()) {
-            if (mainService.isIndexing()) {
+            if (indexingService.getIsIndexing().get()) {
                 saveToDatabase(l);
             } else {
                 throw new SiteIndexingException("Не удалось сохранить страницу " + link.getValue());
             }
         }
 
-    }
-
-    public void doStop() {
-        this.isRunning = false;
     }
 
 }

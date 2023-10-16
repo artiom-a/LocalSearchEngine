@@ -14,8 +14,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SearchResponse extends Response {
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Integer count;
+
     @JsonProperty("data")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<SearchData> searchData;

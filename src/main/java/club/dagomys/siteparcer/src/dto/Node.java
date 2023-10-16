@@ -9,7 +9,5 @@ public interface Node {
 
     int getStatusCode();
 
-    void addChild(Link child);
-
     void addChild(Link child, String relLink);
 }

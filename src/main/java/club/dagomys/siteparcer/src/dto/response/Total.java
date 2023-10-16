@@ -11,12 +11,16 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Total {
+
     @JsonProperty("lemmas")
     private int lemmaCount;
+
     @JsonProperty("sites")
     private int siteCount;
+
     @JsonProperty("pages")
     private int pageCount;
+
     @JsonProperty("isIndexing")
     private boolean isIndexing;
 }

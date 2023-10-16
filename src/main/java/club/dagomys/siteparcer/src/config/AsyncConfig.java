@@ -15,7 +15,7 @@ import java.lang.reflect.Method;
 @EnableAsync
 public class AsyncConfig implements AsyncConfigurer {
 
-    private Logger mainLogger = LogManager.getLogger(AsyncConfig.class);
+    private final Logger mainLogger = LogManager.getLogger(AsyncConfig.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
 
     @Bean(name = "taskExecutor")

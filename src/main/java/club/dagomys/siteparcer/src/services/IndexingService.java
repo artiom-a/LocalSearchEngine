@@ -5,16 +5,15 @@ import club.dagomys.siteparcer.src.config.AppConfig;
 import club.dagomys.siteparcer.src.dto.FieldSelector;
 import club.dagomys.siteparcer.src.dto.Link;
 import club.dagomys.siteparcer.src.dto.request.URLRequest;
-import club.dagomys.siteparcer.src.dto.response.*;
+import club.dagomys.siteparcer.src.dto.response.Response;
 import club.dagomys.siteparcer.src.entity.Field;
 import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.SiteStatus;
-import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
-import club.dagomys.siteparcer.src.lemmatisator.SiteParserRunner;
 import club.dagomys.siteparcer.src.repositories.*;
+import club.dagomys.siteparcer.src.utils.siteparser.SiteParserRunner;
 import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,12 +36,15 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
-public class MainService {
-    private final Logger mainLogger = LogManager.getLogger(MainService.class);
+@Getter
+public class IndexingService {
+
+    private final Logger mainLogger = LogManager.getLogger(IndexingService.class);
+
     private final AtomicBoolean isIndexing = new AtomicBoolean();
+
     private Response response = new Response();
 
     @Autowired
@@ -51,7 +53,6 @@ public class MainService {
     @Autowired
     private LemmaRepository lemmaRepository;
 
-    @Getter
     @Autowired
     private SearchIndexRepository searchIndexRepository;
 
@@ -64,11 +65,9 @@ public class MainService {
     @Autowired
     private ThreadPoolTaskExecutor asyncService;
 
-    @Getter
     @Autowired
     private ForkJoinPool forkJoinPool;
 
-    @Getter
     @Autowired
     private AppConfig appConfig;
 
@@ -141,43 +140,6 @@ public class MainService {
         return response;
     }
 
-    public DashboardResponse getStatistic() {
-        DashboardResponse response = new DashboardResponse();
-        Statistic statistic = new Statistic();
-        ArrayList<Detail> details = new ArrayList<>();
-        Total total = new Total();
-
-        AtomicInteger allLemmas = new AtomicInteger();
-        AtomicInteger allPages = new AtomicInteger();
-
-        List<Site> siteList = siteRepository.findAll();
-
-        if (siteList.isEmpty()) {
-            return new DashboardResponse();
-        }
-
-        siteList.forEach(site -> {
-            try {
-                int pages = pageRepository.findAllPageBySite(site).get().size();
-                int lemmas = lemmaRepository.findAllLemmaBySite(site).get().size();
-                allPages.updateAndGet(v -> v + pages);
-                allLemmas.updateAndGet(v -> v + lemmas);
-                details.add(new Detail(site.getUrl(), site.getName(), site.getStatus(), site.getStatusTime(), site.getLastError(), pages, lemmas));
-            } catch (LemmaNotFoundException e) {
-                mainLogger.error(e.getMessage());
-            }
-        });
-        total.setLemmaCount(allLemmas.get());
-        total.setPageCount(allPages.get());
-        total.setSiteCount((int) siteRepository.count());
-        total.setIndexing(isIndexing.get());
-        statistic.setTotal(total);
-        statistic.setSiteList(details);
-        response.setResult(true);
-        response.setStatistics(statistic);
-
-        return response;
-    }
 
     public Response reindexPage(URLRequest URL, @Required Errors error) {
         Response response = new Response();
@@ -242,30 +204,10 @@ public class MainService {
         taskListener.start();
     }
 
-    public Boolean isIndexing() {
-        return isIndexing.get();
-    }
-
-    public FieldRepository getFieldService() {
-        return fieldRepository;
-    }
-
-    public LemmaRepository getLemmaService() {
-        return lemmaRepository;
-    }
-
-    public PageRepository getPageService() {
-        return pageRepository;
-    }
-
-    public SiteRepository getSiteService() {
-        return siteRepository;
-    }
-
 
     /**
-     * @param siteService  добавляет сайты из конфигурационного файла в БД. Если поле 'name' isEmpty,
-     *                     то вместо названия сайта подставляется поле title главной страницы сайта.
+     * @param siteService добавляет сайты из конфигурационного файла в БД. Если поле 'name' isEmpty,
+     *                    то вместо названия сайта подставляется поле title главной страницы сайта.
      * @return добавляет 2 статические записи для полей на страницах сайтов со значениями по умолчанию
      */
     @Bean

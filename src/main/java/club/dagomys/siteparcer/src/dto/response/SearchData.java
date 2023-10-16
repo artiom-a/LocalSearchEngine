@@ -13,12 +13,18 @@ import org.springframework.data.annotation.Immutable;
 @NoArgsConstructor
 @Immutable
 public class SearchData implements Comparable<SearchData> {
+
     @JsonProperty("site")
     private String rootUrl;
+
     private String siteName;
+
     private String URI;
+
     private String title;
+
     private String snippet;
+
     private Float relevance;
 
     public SearchData(Page page, String title, String snippet, float relevance) {

@@ -10,10 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface PageRepository extends JpaRepository<Page, Integer> {
-
     Optional<List<Page>> findAllPageBySite(Site site);
 
     Optional<Page> findByRelPathAndSite(String path, Site site);
 
-    boolean existsPageByRelPathAndSite(String path, Site site);
 }

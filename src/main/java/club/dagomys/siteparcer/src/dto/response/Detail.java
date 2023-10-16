@@ -14,13 +14,20 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Detail {
+
     private String url;
+
     private String name;
+
     private SiteStatus status;
+
     private LocalDateTime statusTime;
+
     private String error;
+
     @JsonProperty("pages")
     private int pageCount;
+
     @JsonProperty("lemmas")
     private int lemmaCount;
 }

@@ -1,7 +1,8 @@
-package club.dagomys.siteparcer.src.lemmatisator;
+package club.dagomys.siteparcer.src.utils.lemmatizator;
 
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
+import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.morphology.LuceneMorphology;
@@ -23,6 +24,7 @@ public class LemmaCounter {
     private final LuceneMorphology russianMorphology = new RussianLuceneMorphology();
     private final LuceneMorphology englishMorphology = new EnglishLuceneMorphology();
     private final Logger mainLogger = LogManager.getLogger(LemmaCounter.class);
+    @Getter
     private Map<String, Integer> wordsMap;
     private Set<String> lemmaSet;
     private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
@@ -89,10 +91,6 @@ public class LemmaCounter {
                 .collect(Collectors.toSet());
         return lemmaSet;
 
-    }
-
-    public Map<String, Integer> getWordsMap() {
-        return wordsMap;
     }
 
     private boolean isAuxiliaryPartsOfSpeech(String word) {

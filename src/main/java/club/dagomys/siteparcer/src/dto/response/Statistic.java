@@ -15,6 +15,7 @@ import java.util.List;
 public class Statistic {
 
     private Total total;
+
     @JsonProperty("detailed")
     private List<Detail> siteList;
 

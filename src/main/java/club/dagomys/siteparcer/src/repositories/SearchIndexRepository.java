@@ -11,14 +11,10 @@ import java.util.Optional;
 
 @Repository
 public interface SearchIndexRepository extends JpaRepository<SearchIndex, Integer> {
-
     List<SearchIndex> findByLemmaOrderByRankDesc(Lemma lemma);
-
-    List<SearchIndex> findByPageOrderByRankDesc(Page page);
 
     Optional<SearchIndex> findByPageAndLemma(Page page, Lemma lemma);
 
     void deleteByPage(Page page);
 
-    List<SearchIndex> findByPage(Page page);
 }
