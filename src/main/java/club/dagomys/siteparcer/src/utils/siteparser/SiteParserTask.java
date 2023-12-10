@@ -2,7 +2,6 @@ package club.dagomys.siteparcer.src.utils.siteparser;
 
 import club.dagomys.siteparcer.src.dto.Link;
 import club.dagomys.siteparcer.src.entity.Site;
-import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import club.dagomys.siteparcer.src.services.IndexingService;
 import lombok.NoArgsConstructor;
@@ -13,25 +12,20 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
 @Component
 @NoArgsConstructor
 public class SiteParserTask extends RecursiveTask<Link> {
-    private Link rootURL;
+    private Link rootLink;
     private Site site;
     private IndexingService indexingService;
     private static final Logger mainLogger = LogManager.getLogger(SiteParserTask.class);
 
-    public SiteParserTask(Link link) throws PageIndexingException {
-        this.rootURL = link;
-    }
 
     public SiteParserTask(Link rootLink, IndexingService indexingService, Site site) throws SiteIndexingException {
-        this.rootURL = rootLink;
+        this.rootLink = rootLink;
         this.indexingService = indexingService;
         this.site = site;
     }
@@ -42,44 +36,22 @@ public class SiteParserTask extends RecursiveTask<Link> {
     // }
     @Override
     protected Link compute() {
-        List<SiteParserTask> childParserList = new ArrayList<>();
         Link connLink = null;
         try {
-
-            connLink = connectToLink(rootURL);
+            connLink = connectToLink(rootLink);
             for (Link child : connLink.getChildren()) {
                 if (this.indexingService.getIsIndexing().get()) {
                     SiteParserTask childParser = new SiteParserTask(child, indexingService, site);
                     childParser.fork();
-                    childParserList.add(childParser);
+                    childParser.join();
                 } else throw new SiteIndexingException("Parsing is stopped " + site.getUrl());
-
             }
-
-            for (SiteParserTask childTask : childParserList) {
-                if (this.indexingService.getIsIndexing().get()) {
-                    childTask.compute();
-                    childTask.join();
-                } else throw new SiteIndexingException("Compute is stopped " + site.getUrl());
-            }
-
         } catch (SiteIndexingException e) {
             mainLogger.error(e.getMessage());
             site.setLastError(e.getMessage());
         }
+        mainLogger.error(connLink);
         return connLink;
-    }
-
-    private boolean urlChecker(String url) {
-        Pattern urlPattern = Pattern.compile("(https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.[^\\s]{2,}|https?:\\/\\/(?:www\\.|(?!www))[a-zA-Z0-9]+\\.[^\\s]{2,}|www\\.[a-zA-Z0-9]+\\.[^\\s]{2,})");
-        Pattern patternRootDomain = Pattern.compile("^" + rootURL.getValue());
-        Pattern file = Pattern.compile("([^\\s]+((jpg|png|gif|bmp|pdf|JPG|ics))$)");
-        Pattern anchor = Pattern.compile("#([\\w\\-]+)?$");
-        return
-                urlPattern.matcher(url).find() &
-                        patternRootDomain.matcher(url).lookingAt() &
-                        !file.matcher(url).find() &
-                        !anchor.matcher(url).find();
     }
 
     public Link connectToLink(Link connectedLink) {
@@ -115,10 +87,24 @@ public class SiteParserTask extends RecursiveTask<Link> {
 
             });
         } catch (Exception e) {
+            site.setLastError(e.getMessage());
             indexingService.getSiteRepository().saveAndFlush(site);
             mainLogger.error(e.getMessage());
         }
         return connectedLink;
+    }
+
+
+    private boolean urlChecker(String url) {
+        Pattern urlPattern = Pattern.compile("(https?://(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.\\S{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.\\S{2,}|https?://(?:www\\.|(?!www))[a-zA-Z0-9]+\\.\\S{2,}|www\\.[a-zA-Z0-9]+\\.\\S{2,})");
+        Pattern patternRootDomain = Pattern.compile("^" + rootLink.getSite().getUrl());
+        Pattern file = Pattern.compile("(\\S+((jpg|png|gif|bmp|pdf|JPG|ics|xml))$)");
+        Pattern anchor = Pattern.compile("\\S+#([\\w\\-]+)?$");
+        return
+                urlPattern.matcher(url).find() &
+                        patternRootDomain.matcher(url).lookingAt() &
+                        !file.matcher(url).find() &
+                        !anchor.matcher(url).find();
     }
 
 }

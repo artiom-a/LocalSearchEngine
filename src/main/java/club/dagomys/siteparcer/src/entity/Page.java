@@ -43,7 +43,7 @@ public class Page implements Serializable {
         this.relPath = link.getRelUrl();
         this.statusCode = link.getStatusCode();
         this.content = link.getHtml();
-        this.site = link.getSite();
+//        this.site = link.getSite();
     }
 
     @Override

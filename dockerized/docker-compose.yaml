@@ -5,7 +5,7 @@ services:
   db:
     build:
       context: ../
-      dockerfile: dockerize/db/Dockerfile
+      dockerfile: /db/Dockerfile
     container_name: db_mysql
     hostname: mysql
     command: [ '--default-authentication-plugin=mysql_native_password',
@@ -29,7 +29,7 @@ services:
   linkdex:
     build:
       context: ../
-      dockerfile: dockerize/linkdex/Dockerfile
+      dockerfile: /linkdex/Dockerfile
     container_name: linkdex
     hostname: linkdex
     image: linkdex:3.0.0

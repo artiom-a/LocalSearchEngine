@@ -119,7 +119,6 @@ public class Link implements Node, Comparable<Link> {
                 ", status=" + statusCode +
                 ", parentLink=" + parentLink +
                 ", layer=" + layer +
-                ", site=" + site.getId() +
                 '}';
     }
 }

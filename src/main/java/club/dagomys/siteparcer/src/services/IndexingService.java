@@ -150,12 +150,12 @@ public class IndexingService {
             if (!error.hasErrors()) {
                 Link rootLink = new Link(URL.getPath());
                 for (Site s : siteList) {
-                    if (s.getStatus() == SiteStatus.INDEXING) {
-                        throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
-                    }
                     if (rootLink.getValue().contains(s.getUrl())) {
                         site = Optional.of(s);
                         mainLogger.info(site);
+                        if (site.get().getStatus() == SiteStatus.INDEXING) {
+                            throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
+                        }
                     }
                 }
                 if (site.isPresent()) {
