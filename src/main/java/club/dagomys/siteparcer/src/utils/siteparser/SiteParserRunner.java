@@ -201,30 +201,32 @@ public class SiteParserRunner implements Runnable {
 
 
     private Link getSiteLinks() throws SiteIndexingException {
-        if (indexingService.getIsIndexing().get()) {
+//        if (indexingService.getIsIndexing().get()) {
             Link rootLink = new Link(this.site.getUrl());
             indexingService.getSiteRepository().saveAndFlush(this.site);
             RecursiveTask<Link> forkJoinTask = new SiteParserTask(rootLink, indexingService, this.site);
             return indexingService.getForkJoinPool().invoke(forkJoinTask);
-        } else throw new SiteIndexingException("Парсинг ссылок остановлен " + this.site.getUrl());
+//        } else throw new SiteIndexingException("Парсинг ссылок остановлен " + this.site.getUrl());
     }
 
 
     private void saveToDatabase(Link link) throws SiteIndexingException {
         if (link.getHtml() != null) {
-            Optional<Page> root = indexingService.getPageRepository().findByRelPathAndSite(link.getRelUrl(), link.getSite());
-            if (root.isPresent()) {
-                indexingService.getPageRepository().saveAndFlush(root.get());
-            } else {
-                indexingService.getPageRepository().saveAndFlush(new Page(link));
-            }
-        }
-        for (Link l : link.getChildren()) {
             if (indexingService.getIsIndexing().get()) {
-                saveToDatabase(l);
+                Optional<Page> root = indexingService.getPageRepository().findByRelPathAndSite(link.getRelUrl(), link.getSite());
+                if (root.isPresent()) {
+                    indexingService.getPageRepository().saveAndFlush(root.get());
+                } else {
+                    indexingService.getPageRepository().saveAndFlush(new Page(link));
+                }
             } else {
                 throw new SiteIndexingException("Не удалось сохранить страницу " + link.getValue());
             }
+        }
+        for (Link l : link.getChildren()) {
+
+            saveToDatabase(l);
+
         }
 
     }

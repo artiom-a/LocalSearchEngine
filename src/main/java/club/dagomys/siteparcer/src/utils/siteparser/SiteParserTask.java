@@ -12,6 +12,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
@@ -40,17 +41,20 @@ public class SiteParserTask extends RecursiveTask<Link> {
         try {
             connLink = connectToLink(rootLink);
             for (Link child : connLink.getChildren()) {
+                SiteParserTask childParser = new SiteParserTask();
                 if (this.indexingService.getIsIndexing().get()) {
-                    SiteParserTask childParser = new SiteParserTask(child, indexingService, site);
-                    childParser.fork();
-                    childParser.join();
-                } else throw new SiteIndexingException("Parsing is stopped " + site.getUrl());
+                     childParser = new SiteParserTask(child, indexingService, site);
+
+                }
+                childParser.fork();
+                childParser.join();
             }
+
         } catch (SiteIndexingException e) {
             mainLogger.error(e.getMessage());
             site.setLastError(e.getMessage());
         }
-        mainLogger.error(connLink);
+        mainLogger.info(connLink);
         return connLink;
     }
 
@@ -60,7 +64,7 @@ public class SiteParserTask extends RecursiveTask<Link> {
             Document siteFile = Jsoup
                     .connect(connectedLink.getValue())
                     .userAgent(indexingService.getAppConfig().getUserAgent())
-                    .referrer("http://www.google.com")
+                    .referrer(indexingService.getAppConfig().getReferer())
                     .ignoreHttpErrors(false)
                     .get();
             Elements siteElements = siteFile.select("a[href]");

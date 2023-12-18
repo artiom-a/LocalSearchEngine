@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 
 @Configuration
@@ -17,7 +18,7 @@ public class ForkJoinPoolConfig {
         mainLogger.info("ForkJoinPool creating...");
         ForkJoinPoolFactoryBean forkJoinPoolFactoryBean = new ForkJoinPoolFactoryBean();
         forkJoinPoolFactoryBean.setParallelism(CORE_COUNT);
-        forkJoinPoolFactoryBean.setAwaitTerminationSeconds(10);
+        forkJoinPoolFactoryBean.setAwaitTerminationSeconds(4);
         return forkJoinPoolFactoryBean;
     }
 

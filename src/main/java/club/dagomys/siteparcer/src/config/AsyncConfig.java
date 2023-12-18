@@ -23,7 +23,7 @@ public class AsyncConfig implements AsyncConfigurer {
         mainLogger.info("Creating task executor...");
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CORE_COUNT);
-        executor.setMaxPoolSize(CORE_COUNT*10);
+        executor.setMaxPoolSize(CORE_COUNT);
         executor.setThreadNamePrefix("SiteExecutor-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.initialize();

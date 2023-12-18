@@ -19,5 +19,6 @@ public class AppConfig {
     private List<Site> siteList;
 
     private String UserAgent;
+    private String referer;
 
 }
