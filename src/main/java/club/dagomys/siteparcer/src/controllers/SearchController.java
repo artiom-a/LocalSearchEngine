@@ -4,11 +4,9 @@ import club.dagomys.siteparcer.src.dto.request.SearchRequest;
 import club.dagomys.siteparcer.src.dto.response.SearchResponse;
 import club.dagomys.siteparcer.src.exception.SearchEngineException;
 import club.dagomys.siteparcer.src.services.SearchService;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 
 @Controller
+@Slf4j
 public class SearchController {
-    private final Logger mainLogger = LogManager.getLogger(SearchController.class);
     private SearchResponse searchResponse = new SearchResponse();
 
 
@@ -55,7 +53,7 @@ public class SearchController {
             searchResponse = searchService.search(searchRequest, site, offset, limit, errors );
             return "redirect:/new/search";
         } else {
-            mainLogger.info(errors.getAllErrors());
+            log.info(errors.getAllErrors().toString());
             return "/new/search";
         }
 

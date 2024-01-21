@@ -5,10 +5,8 @@ import club.dagomys.siteparcer.src.dto.request.URLRequest;
 import club.dagomys.siteparcer.src.dto.response.Response;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.services.IndexingService;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import jakarta.validation.Valid;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.concurrent.ExecutionException;
 
 @Controller
+@Slf4j
 public class IndexingController {
-    private final Logger mainLogger = LogManager.getLogger(IndexingController.class);
 
     @Autowired
     private IndexingService indexingService;
@@ -38,11 +36,11 @@ public class IndexingController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PostMapping("/api/indexPage")
+/*    @PostMapping("/api/indexPage")
     public @ResponseBody ResponseEntity<Response> indexPage(@Valid @ModelAttribute("url") URLRequest URL, Errors errors) {
         Response response = indexingService.reindexPage(URL, errors);
         return new ResponseEntity<>(response, HttpStatus.OK);
-    }
+    }*/
 
     @GetMapping(value = {"/new/startIndexing"})
     public String startIndexing(Model model) {
@@ -58,7 +56,7 @@ public class IndexingController {
     @PostMapping("/new/addUrl")
     public String addUrl(@Valid @ModelAttribute("URL") URLRequest URL, Errors errors, Model model) {
         if (!errors.hasErrors()) {
-            mainLogger.info(URL);
+            log.info(String.valueOf(URL));
             Link rootLink = new Link(URL.getPath());
             Site newSite = new Site(rootLink);
             if (!newSite.getUrl().endsWith("/")) {
@@ -67,7 +65,7 @@ public class IndexingController {
             indexingService.getSiteRepository().saveAndFlush(newSite);
             return "redirect:/new/sites";
         } else {
-            mainLogger.info(errors.getAllErrors());
+            log.info(errors.getAllErrors().toString());
             return "/new/add_url";
         }
     }

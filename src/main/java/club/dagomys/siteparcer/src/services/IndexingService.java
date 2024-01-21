@@ -3,21 +3,15 @@ package club.dagomys.siteparcer.src.services;
 
 import club.dagomys.siteparcer.src.config.AppConfig;
 import club.dagomys.siteparcer.src.dto.FieldSelector;
-import club.dagomys.siteparcer.src.dto.Link;
-import club.dagomys.siteparcer.src.dto.request.URLRequest;
 import club.dagomys.siteparcer.src.dto.response.Response;
 import club.dagomys.siteparcer.src.entity.Field;
-import club.dagomys.siteparcer.src.entity.Page;
 import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.entity.SiteStatus;
-import club.dagomys.siteparcer.src.exception.PageIndexingException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import club.dagomys.siteparcer.src.repositories.*;
 import club.dagomys.siteparcer.src.utils.siteparser.SiteParserRunner;
 import lombok.Getter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,13 +19,11 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.Errors;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -39,9 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Getter
+@Slf4j
 public class IndexingService {
-
-    private final Logger mainLogger = LogManager.getLogger(IndexingService.class);
 
     private final AtomicBoolean isIndexing = new AtomicBoolean();
 
@@ -85,7 +76,7 @@ public class IndexingService {
                         isIndexing.set(false);
                         response.setResult(false);
                         response.setError(s.getUrl() + " is indexing");
-                        mainLogger.error(s.getUrl() + " is indexing");
+                        log.error(s.getUrl() + " is indexing");
                     }
                 });
                 taskListener(runList);
@@ -97,7 +88,7 @@ public class IndexingService {
         } catch (Exception e) {
             site.setLastError(e.getMessage());
             siteRepository.saveAndFlush(site);
-            mainLogger.error("Ошибка индексации " + e);
+            log.error("Ошибка индексации " + e);
             isIndexing.set(false);
             response.setResult(false);
             response.setError(site.getUrl() + " status is " + site.getStatus());
@@ -116,7 +107,7 @@ public class IndexingService {
             isIndexing.set(false);
             siteResponse.setResult(isIndexing.get());
             siteResponse.setError(site.getUrl() + " is indexing");
-            mainLogger.error(site.getUrl() + " is indexing");
+            log.error(site.getUrl() + " is indexing");
         }
         return siteResponse;
     }
@@ -141,6 +132,7 @@ public class IndexingService {
     }
 
 
+/*
     public Response reindexPage(URLRequest URL, @Required Errors error) {
         Response response = new Response();
         List<Site> siteList = siteRepository.findAll();
@@ -152,7 +144,7 @@ public class IndexingService {
                 for (Site s : siteList) {
                     if (rootLink.getValue().contains(s.getUrl())) {
                         site = Optional.of(s);
-                        mainLogger.info(site);
+                        log.info(String.valueOf(site));
                         if (site.get().getStatus() == SiteStatus.INDEXING) {
                             throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
                         }
@@ -179,10 +171,11 @@ public class IndexingService {
         } catch (Exception | PageIndexingException e) {
             response.setResult(false);
             response.setError(e.getMessage());
-            mainLogger.error(e.getMessage());
+            log.error(e.getMessage());
         }
         return response;
     }
+*/
 
     private void taskListener(List<SiteParserRunner> runList) {
         List<CompletableFuture<Void>> completableFutures = runList.parallelStream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
@@ -192,11 +185,11 @@ public class IndexingService {
                     boolean isEveryRunnableDone = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[completableFutures.size() - 1])).isDone();
                     if (isEveryRunnableDone) {
                         isIndexing.set(false);
-                        mainLogger.info("All tasks is done!");
+                        log.info("All tasks is done!");
                     }
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    mainLogger.error(e.getMessage());
+                    log.error(e.getMessage());
                 }
             }
         });
@@ -219,8 +212,7 @@ public class IndexingService {
                 this.fieldRepository.save(title);
                 this.fieldRepository.save(body);
             } else {
-                mainLogger.info("Данные уже добавлены ранее");
-                this.fieldRepository.findAll().forEach(mainLogger::info);
+                log.info("Данные уже добавлены ранее");
             }
             appConfig.getSiteList().forEach(site -> {
                 if (site.getUrl().endsWith("/")) {
@@ -239,7 +231,7 @@ public class IndexingService {
                             site.setName(siteFile.title());
                         } catch (IOException e) {
                             site.setLastError("Site is not found");
-                            mainLogger.error(site.getUrl() + " " + e.getMessage());
+                            log.error(site.getUrl() + " " + e.getMessage());
                         }
                         siteService.saveAndFlush(site);
                     } else {

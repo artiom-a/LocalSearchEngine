@@ -3,8 +3,7 @@ package club.dagomys.siteparcer.src.utils.lemmatizator;
 import club.dagomys.siteparcer.src.entity.Lemma;
 import club.dagomys.siteparcer.src.entity.Page;
 import lombok.Getter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
@@ -20,29 +19,22 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
+@Slf4j
 public class LemmaCounter {
     private final LuceneMorphology russianMorphology = new RussianLuceneMorphology();
     private final LuceneMorphology englishMorphology = new EnglishLuceneMorphology();
-    private final Logger mainLogger = LogManager.getLogger(LemmaCounter.class);
     @Getter
     private Map<String, Integer> wordsMap;
-    private Set<String> lemmaSet;
     private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
     private final Pattern english = Pattern.compile("([A-z]+)");
     private final Pattern russian = Pattern.compile("([А-яё]+)");
-    private Matcher wordMatch;
-    private List<String> replacedText;
-    private String text;
+    private final List<String> replacedText;
 
     public LemmaCounter(String text) throws IOException {
-        this.text = text;
-        wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " "));
+        Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("[—]|\\p{Punct}|\\s]", " "));
         replacedText = wordMatch.results()
                 .map(MatchResult::group).toList();
         wordsMap = new TreeMap<>();
-    }
-
-    public LemmaCounter() throws IOException {
     }
 
     public Map<String, Integer> countLemmas() {
@@ -75,23 +67,10 @@ public class LemmaCounter {
             index += splitWord.length() + 1;
         }
 
-        mainLogger.info("INDEXES\t" + listOfIndexes);
+        log.info("INDEXES\t" + listOfIndexes);
         return listOfIndexes;
     }
 
-    public Set<String> getLemmaSet() {
-        lemmaSet = new TreeSet<>();
-        Set<String> morphList = replacedText.stream()
-                .filter(word -> word.matches(english.pattern()) || word.matches(russian.pattern())).filter(this::isAuxiliaryPartsOfSpeech)
-                .collect(Collectors.toSet());
-
-        lemmaSet = morphList.stream()
-                .map(word -> Objects.equals(getLanguage(word), "RU") ? russianMorphology.getNormalForms(word) : englishMorphology.getNormalForms(word))
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
-        return lemmaSet;
-
-    }
 
     private boolean isAuxiliaryPartsOfSpeech(String word) {
 

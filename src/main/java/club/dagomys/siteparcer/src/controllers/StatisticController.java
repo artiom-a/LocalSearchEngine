@@ -2,9 +2,7 @@ package club.dagomys.siteparcer.src.controllers;
 
 import club.dagomys.siteparcer.src.dto.response.DashboardResponse;
 import club.dagomys.siteparcer.src.services.StatisticService;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +14,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Controller
+@Slf4j
 public class StatisticController implements WebMvcConfigurer {
-
-    private final Logger mainLogger = LogManager.getLogger(StatisticService.class);
     @Autowired
     private StatisticService statisticService;
 

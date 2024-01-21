@@ -8,23 +8,24 @@ spring:
   jpa:
     generate-ddl: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
   mvc:
     favicon:
       enabled: true
-    hiddenmethod:
+    hidden-method:
       filter:
         enabled: true
   output:
     ansi:
       enabled: ALWAYS
-springdoc:
+spring-doc:
   swagger-ui:
     path: /openapi
     operationsSorter: method
   writer-with-default-pretty-printer: true
 app-configuration:
-  userAgent: "Mozilla/5.0 (compatible; YandexMetrika/2.0; +http://yandex.com/bots yabs01)"
+  userAgent: "Opera"
+  referer: "https://www.yandex.ru"
   siteList:
     - name: ""
       url: https://maxima.school
@@ -32,16 +33,30 @@ app-configuration:
       url: https://u-house-sochi.ru
     - name: ""
       url: https://spaodissey.ru
-    - name: ""
-      url: https://yandex.ru/pogoda
-    - name: ""
-      url: https://disk.yandex.ru
-    - name: ""
-      url: https://dostavka.yandex.ru
-    - name: ""
-      url: https://www.svetlovka.ru
+#    - name: ""
+#      url: https://www.svetlovka.ru
     - name: ""
       url: https://andaseat.com
+#    - url: http://www.playback.ru/
+#      name: "Плейбек"
+#    - url: https://volochek.life/
+#      name: "Волочек"
+#    - url: https://radiomv.ru/
+#      name: "РадиоМВ"
+#    - url: https://ipfran.ru/
+#      name: "ИПФ РАН"
+#    - url: https://dimonvideo.ru/
+#      name: "Димон Видео"
+#    - url: https://www.nikoartgallery.com/
+#      name: "НИКО АРТ"
+#    - url: https://et-cetera.ru/
+#      name: "Этсетра"
+    - url: https://www.lutherancathedral.ru/
+      name: "Церковь"
+    - url: https://dombulgakova.ru/
+      name: "Дом Булгакова"
+#    - url: https://www.svetlovka.ru/
+#      name: "Светловка"
 
 
 

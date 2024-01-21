@@ -21,7 +21,7 @@ public class Page implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "path", length = 700)
+    @Column(name = "path", length = 750)
     private String relPath;
 
     @Column(name = "code")

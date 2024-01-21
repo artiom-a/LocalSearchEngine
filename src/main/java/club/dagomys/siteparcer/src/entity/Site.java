@@ -31,7 +31,7 @@ public class Site implements Serializable, Comparable<Site> {
     @Column(name = "status_time")
     private LocalDateTime statusTime;
 
-    @Column(name = "last_error")
+    @Column(name = "last_error", length = 1400)
     private String lastError;
 
     @Transient

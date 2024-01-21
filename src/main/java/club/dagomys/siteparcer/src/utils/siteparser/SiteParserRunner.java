@@ -7,8 +7,7 @@ import club.dagomys.siteparcer.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import club.dagomys.siteparcer.src.services.IndexingService;
 import club.dagomys.siteparcer.src.utils.lemmatizator.LemmaCounter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -23,8 +22,8 @@ import java.util.*;
 import java.util.concurrent.RecursiveTask;
 
 @Component
+@Slf4j
 public class SiteParserRunner implements Runnable {
-    private final Logger mainLogger = LogManager.getLogger(SiteParserRunner.class);
     private final Site site;
     private volatile boolean isRunning;
     @Autowired
@@ -49,7 +48,7 @@ public class SiteParserRunner implements Runnable {
         indexingService.getSiteRepository().saveAndFlush(this.site);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yy HH:mm:ss");
         Calendar startTime = Calendar.getInstance();
-        mainLogger.warn("start time " + dateFormat.format(startTime.getTime()));
+        log.warn("start time " + dateFormat.format(startTime.getTime()));
         while (isRunning) {
             try {
                 Link siteLinks = getSiteLinks();
@@ -58,9 +57,9 @@ public class SiteParserRunner implements Runnable {
                 createSearchSiteIndexes();
                 this.isRunning = false;
                 Calendar finishDate = Calendar.getInstance();
-                mainLogger.warn("finish time " + dateFormat.format(finishDate.getTime()));
+                log.warn("finish time " + dateFormat.format(finishDate.getTime()));
                 Duration duration = Duration.between(startTime.toInstant(), finishDate.toInstant());
-                mainLogger.info("Duration " + duration.toString());
+                log.info("Duration " + duration.toString());
                 site.setStatusTime(LocalDateTime.now());
                 site.setStatus(SiteStatus.INDEXED);
                 indexingService.getSiteRepository().saveAndFlush(this.site);
@@ -68,7 +67,7 @@ public class SiteParserRunner implements Runnable {
                 this.isRunning = false;
                 this.site.setStatus(SiteStatus.FAILED);
                 this.site.setLastError(e.getMessage());
-                mainLogger.error(e.getMessage() + " " + "Поток был прерван пользователем");
+                log.error(e.getMessage() + " " + "Поток был прерван пользователем");
                 indexingService.getSiteRepository().saveAndFlush(site);
             }
 
@@ -83,7 +82,7 @@ public class SiteParserRunner implements Runnable {
         for (Page page : indexingService.getPageRepository().findAllPageBySite(this.site).get()) {
             Map<String, Lemma> indexedPageMap = countLemmasOnPage(page);
             if (indexingService.getIsIndexing().get()) {
-                mainLogger.info("Start parsing \t" + page.getRelPath());
+                log.info("Start parsing \t" + page.getRelPath());
                 indexedPageMap.forEach((key, value) -> {
                     if (indexedPagesLemmas.containsKey(key)) {
                         indexedPagesLemmas.put(key, indexedPagesLemmas.get(key) + 1);
@@ -93,7 +92,7 @@ public class SiteParserRunner implements Runnable {
                 });
             } else throw new SiteIndexingException("Нахождение частоты лемм на сайте остановлено");
             lemmaCounting(indexedPageMap);
-            mainLogger.warn("End parsing \t" + page.getRelPath());
+            log.warn("End parsing \t" + page.getRelPath());
         }
         saveLemmaToDatabase(indexedPagesLemmas);
     }
@@ -108,7 +107,7 @@ public class SiteParserRunner implements Runnable {
                     lemmaList.add(lemma);
                 } else throw new SiteIndexingException("Сохранение лемм в БД остановлено для сайта " + site.getUrl());
             } catch (SiteIndexingException e) {
-                mainLogger.error(e.getMessage());
+                log.error(e.getMessage());
             }
         });
         indexingService.getLemmaRepository().deleteLemmaBySite(site);
@@ -126,9 +125,9 @@ public class SiteParserRunner implements Runnable {
                 }
             } else throw new SiteIndexingException("Остановка парсинга страницы");
         } else {
-            mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
+            log.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
         }
-        mainLogger.info("Lemmas count: {} {} ", lemmas.size(), "words");
+        log.info("Lemmas count: {} {} ", lemmas.size(), "words");
         return lemmas;
     }
 
@@ -168,10 +167,10 @@ public class SiteParserRunner implements Runnable {
                 System.out.println(e.getMessage());
             }
         } else {
-            mainLogger.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
+            log.warn(indexingPage + " is not available. Code " + indexingPage.getStatusCode());
         }
 
-        mainLogger.info("lemmas size\t {}", lemmas.size());
+        log.info("lemmas size\t {}", lemmas.size());
         return lemmas;
 
     }
@@ -182,7 +181,7 @@ public class SiteParserRunner implements Runnable {
         for (Page page : indexingService.getPageRepository().findAllPageBySite(site).get()) {
             indexingService.getSearchIndexRepository().deleteByPage(page);
             long startTime = System.currentTimeMillis();
-            mainLogger.info("Start parsing \t" + this.site.getUrl() + page.getRelPath());
+            log.info("Start parsing \t" + this.site.getUrl() + page.getRelPath());
             if (indexingService.getIsIndexing().get()) {
                 Map<String, Float> indexedPageMap = startIndexingLemmasOnPage(page);
                 indexedPageMap.forEach((key, value) -> {
@@ -193,20 +192,18 @@ public class SiteParserRunner implements Runnable {
                 throw new SiteIndexingException("Индексация остановлена на странице " + page.getRelPath() + " сайт " + page.getSite().getUrl());
             }
             long endTime = System.currentTimeMillis();
-            mainLogger.warn(page.getRelPath() + " indexing is complete");
-            mainLogger.warn("End parsing {} ms \t" + page.getRelPath(), endTime - startTime);
+            log.warn(page.getRelPath() + " indexing is complete");
+            log.warn("End parsing {} ms \t" + page.getRelPath(), endTime - startTime);
         }
         indexingService.getSearchIndexRepository().saveAll(searchIndexList);
     }
 
 
     private Link getSiteLinks() throws SiteIndexingException {
-//        if (indexingService.getIsIndexing().get()) {
-            Link rootLink = new Link(this.site.getUrl());
-            indexingService.getSiteRepository().saveAndFlush(this.site);
-            RecursiveTask<Link> forkJoinTask = new SiteParserTask(rootLink, indexingService, this.site);
-            return indexingService.getForkJoinPool().invoke(forkJoinTask);
-//        } else throw new SiteIndexingException("Парсинг ссылок остановлен " + this.site.getUrl());
+        Link rootLink = new Link(this.site.getUrl());
+        indexingService.getSiteRepository().saveAndFlush(this.site);
+        RecursiveTask<Link> forkJoinTask = new SiteParserTask(rootLink, indexingService, this.site);
+        return indexingService.getForkJoinPool().invoke(forkJoinTask);
     }
 
 

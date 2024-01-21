@@ -1,7 +1,6 @@
 package club.dagomys.siteparcer.src.config;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,14 +12,14 @@ import java.lang.reflect.Method;
 
 @Configuration
 @EnableAsync
+@Slf4j
 public class AsyncConfig implements AsyncConfigurer {
 
-    private final Logger mainLogger = LogManager.getLogger(AsyncConfig.class);
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
 
     @Bean(name = "taskExecutor")
     public ThreadPoolTaskExecutor taskExecutor() {
-        mainLogger.info("Creating task executor...");
+        log.info("Creating task executor...");
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(CORE_COUNT);
         executor.setMaxPoolSize(CORE_COUNT);
@@ -35,12 +34,12 @@ public class AsyncConfig implements AsyncConfigurer {
         return new AsyncUncaughtExceptionHandler() {
             @Override
             public void handleUncaughtException(Throwable ex, Method method, Object... params) {
-                mainLogger.error("Throwable Exception message   : " + ex.getMessage());
-                mainLogger.error("Method name : " + method.getName());
+                log.error("Throwable Exception message   : " + ex.getMessage());
+                log.error("Method name : " + method.getName());
                 for (Object param : params) {
-                    mainLogger.error("Parameter value             : " + param);
+                    log.error("Parameter value             : " + param);
                 }
-                mainLogger.error("stack Trace ");
+                log.error("stack Trace ");
                 ex.printStackTrace();
             }
 

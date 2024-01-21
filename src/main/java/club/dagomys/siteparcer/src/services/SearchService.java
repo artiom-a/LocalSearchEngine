@@ -14,8 +14,7 @@ import club.dagomys.siteparcer.src.repositories.PageRepository;
 import club.dagomys.siteparcer.src.repositories.SearchIndexRepository;
 import club.dagomys.siteparcer.src.repositories.SiteRepository;
 import club.dagomys.siteparcer.src.utils.lemmatizator.LemmaCounter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +29,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class SearchService {
-    private final Logger mainLogger = LogManager.getLogger(SearchService.class);
     private Site site;
 
     @Autowired
@@ -70,16 +69,16 @@ public class SearchService {
                 }
                 List<SearchData> searchDataList = getRelevance(findPages, findLemmas);
 
-                mainLogger.info("Поисковый запрос \t" + searchLine);
+                log.info("Поисковый запрос \t" + searchLine);
                 response.setResult(true);
                 response.setCount(searchDataList.size());
                 response.setSearchData(getPageFromList(searchDataList, offset, limit).toList());
-                mainLogger.info("RESPONSE " + response);
+                log.info("RESPONSE " + response);
             } else throw new SearchEngineException(Objects.requireNonNull(errors.getFieldError()).getDefaultMessage());
         } catch (SearchEngineException ex) {
             response.setResult(false);
             response.setError(ex.getMessage());
-            mainLogger.error(ex.getMessage());
+            log.error(ex.getMessage());
         }
         return response;
     }
@@ -211,7 +210,7 @@ public class SearchService {
             pageAbsRelevance.put(page, r);
             if (r > maxRel)
                 maxRel = r;
-            mainLogger.info(page.getRelPath() + " relevance " + String.format("%.2f", r));
+            log.info(page.getRelPath() + " relevance " + String.format("%.2f", r));
         }
 
         for (Map.Entry<Page, Float> abs : pageAbsRelevance.entrySet()) {
@@ -237,14 +236,14 @@ public class SearchService {
                     Optional<List<Lemma>> findLemmas = lemmaRepository.findAllByLemma(key);
                     findLemmas.ifPresent(lemmaList::addAll);
                 } catch (LemmaNotFoundException e) {
-                    mainLogger.warn(e.getMessage());
+                    log.warn(e.getMessage());
                 }
             });
             deleteCommonLemmas(lemmaList);
         } catch (IOException e) {
-            mainLogger.error(e.getMessage());
+            log.error(e.getMessage());
         }
-        mainLogger.info("FIND LEMMAS \t" + lemmaList);
+        log.info("FIND LEMMAS \t" + lemmaList);
         return lemmaList;
     }
 
@@ -264,7 +263,7 @@ public class SearchService {
     private List<Page> findIndexedPage(Lemma lemma) {
         List<SearchIndex> findPages = new ArrayList<>();
         if (lemma == null) {
-            mainLogger.error("lemma not exist");
+            log.error("lemma not exist");
         } else {
             findPages = new ArrayList<>(searchIndexRepository.findByLemmaOrderByRankDesc(lemma));
         }

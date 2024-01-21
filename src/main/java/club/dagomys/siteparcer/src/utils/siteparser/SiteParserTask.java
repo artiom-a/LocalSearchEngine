@@ -5,25 +5,22 @@ import club.dagomys.siteparcer.src.entity.Site;
 import club.dagomys.siteparcer.src.exception.SiteIndexingException;
 import club.dagomys.siteparcer.src.services.IndexingService;
 import lombok.NoArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Pattern;
 
 @Component
 @NoArgsConstructor
+@Slf4j
 public class SiteParserTask extends RecursiveTask<Link> {
     private Link rootLink;
     private Site site;
     private IndexingService indexingService;
-    private static final Logger mainLogger = LogManager.getLogger(SiteParserTask.class);
-
 
     public SiteParserTask(Link rootLink, IndexingService indexingService, Site site) throws SiteIndexingException {
         this.rootLink = rootLink;
@@ -41,31 +38,32 @@ public class SiteParserTask extends RecursiveTask<Link> {
         try {
             connLink = connectToLink(rootLink);
             for (Link child : connLink.getChildren()) {
-                SiteParserTask childParser = new SiteParserTask();
+
                 if (this.indexingService.getIsIndexing().get()) {
-                     childParser = new SiteParserTask(child, indexingService, site);
+                    SiteParserTask childParser = new SiteParserTask(child, indexingService, site);
+                    childParser.fork();
+                    childParser.join();
 
                 }
-                childParser.fork();
-                childParser.join();
-            }
 
+            }
         } catch (SiteIndexingException e) {
-            mainLogger.error(e.getMessage());
+            log.error(e.getMessage());
             site.setLastError(e.getMessage());
         }
-        mainLogger.info(connLink);
+        log.info(String.valueOf(connLink));
         return connLink;
     }
 
     public Link connectToLink(Link connectedLink) {
         try {
-            Thread.sleep(100);
             Document siteFile = Jsoup
                     .connect(connectedLink.getValue())
                     .userAgent(indexingService.getAppConfig().getUserAgent())
                     .referrer(indexingService.getAppConfig().getReferer())
                     .ignoreHttpErrors(false)
+                    .ignoreContentType(true)
+                    .timeout(10000)
                     .get();
             Elements siteElements = siteFile.select("a[href]");
             int status = siteFile.connection().response().statusCode();
@@ -93,7 +91,7 @@ public class SiteParserTask extends RecursiveTask<Link> {
         } catch (Exception e) {
             site.setLastError(e.getMessage());
             indexingService.getSiteRepository().saveAndFlush(site);
-            mainLogger.error(e.getMessage());
+            log.error(e.getMessage());
         }
         return connectedLink;
     }
@@ -102,12 +100,12 @@ public class SiteParserTask extends RecursiveTask<Link> {
     private boolean urlChecker(String url) {
         Pattern urlPattern = Pattern.compile("(https?://(?:www\\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.\\S{2,}|www\\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\\.\\S{2,}|https?://(?:www\\.|(?!www))[a-zA-Z0-9]+\\.\\S{2,}|www\\.[a-zA-Z0-9]+\\.\\S{2,})");
         Pattern patternRootDomain = Pattern.compile("^" + rootLink.getSite().getUrl());
-        Pattern file = Pattern.compile("(\\S+((jpg|png|gif|bmp|pdf|JPG|ics|xml))$)");
+        Pattern file = Pattern.compile("(\\S+((jpg|png|gif|bmp|pdf|ics|xml|jpeg))$)");
         Pattern anchor = Pattern.compile("\\S+#([\\w\\-]+)?$");
         return
                 urlPattern.matcher(url).find() &
                         patternRootDomain.matcher(url).lookingAt() &
-                        !file.matcher(url).find() &
+                        !file.matcher(url.toLowerCase()).find() &
                         !anchor.matcher(url).find();
     }
 

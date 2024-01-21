@@ -10,8 +10,7 @@ import club.dagomys.siteparcer.src.repositories.LemmaRepository;
 import club.dagomys.siteparcer.src.repositories.PageRepository;
 import club.dagomys.siteparcer.src.repositories.SiteRepository;
 import lombok.Getter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,9 +19,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
+@Slf4j
 public class StatisticService {
-
-    private final Logger mainLogger = LogManager.getLogger(StatisticService.class);
 
     @Autowired
     @Getter
@@ -60,7 +58,7 @@ public class StatisticService {
                 allLemmas.updateAndGet(v -> v + lemmas);
                 details.add(new Detail(site.getUrl(), site.getName(), site.getStatus(), site.getStatusTime(), site.getLastError(), pages, lemmas));
             } catch (LemmaNotFoundException e) {
-                mainLogger.error(e.getMessage());
+                log.error(e.getMessage());
             }
         });
         total.setLemmaCount(allLemmas.get());
