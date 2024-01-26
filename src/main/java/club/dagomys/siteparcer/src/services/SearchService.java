@@ -247,16 +247,10 @@ public class SearchService {
         return lemmaList;
     }
 
-    private Set<Lemma> deleteCommonLemmas(List<Lemma> lemmas) {
-        Set<Lemma> modifyLemmaList = new TreeSet<>(lemmas);
-        final double percent = 1;
+    private void deleteCommonLemmas(List<Lemma> lemmas) {
+        final double percent = 0.99;
         double frequency = pageRepository.findAll().size() * percent;
         lemmas.removeIf(l -> l.getFrequency() > frequency);
-        return modifyLemmaList;
-    }
-
-    private List<Lemma> sortLemmasByFrequency(List<Lemma> lemmaSet) {
-        return lemmaSet.stream().sorted(Comparator.comparing(Lemma::getFrequency)).collect(Collectors.toCollection(ArrayList::new));
     }
 
 

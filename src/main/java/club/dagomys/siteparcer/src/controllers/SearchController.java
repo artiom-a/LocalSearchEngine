@@ -16,7 +16,6 @@ import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
 
-
 @Controller
 @Slf4j
 public class SearchController {
@@ -50,7 +49,7 @@ public class SearchController {
                          @RequestParam(value = "offset", required = false, defaultValue = "0") Integer offset,
                          @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit) throws SearchEngineException {
         if (!errors.hasErrors()) {
-            searchResponse = searchService.search(searchRequest, site, offset, limit, errors );
+            searchResponse = searchService.search(searchRequest, site, offset, limit, errors);
             return "redirect:/new/search";
         } else {
             log.info(errors.getAllErrors().toString());

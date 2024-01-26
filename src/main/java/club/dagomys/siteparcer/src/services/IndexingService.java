@@ -131,52 +131,6 @@ public class IndexingService {
         return response;
     }
 
-
-/*
-    public Response reindexPage(URLRequest URL, @Required Errors error) {
-        Response response = new Response();
-        List<Site> siteList = siteRepository.findAll();
-        Optional<Site> site = Optional.empty();
-        Optional<Page> page = Optional.of(new Page());
-        try {
-            if (!error.hasErrors()) {
-                Link rootLink = new Link(URL.getPath());
-                for (Site s : siteList) {
-                    if (rootLink.getValue().contains(s.getUrl())) {
-                        site = Optional.of(s);
-                        log.info(String.valueOf(site));
-                        if (site.get().getStatus() == SiteStatus.INDEXING) {
-                            throw new PageIndexingException("Сайт " + s.getUrl() + " в процессе индексации");
-                        }
-                    }
-                }
-                if (site.isPresent()) {
-                    String relativeURL = rootLink.getValue().replace(site.get().getUrl(), "");
-                    page.get().setRelPath(relativeURL);
-                    page.get().setSite(site.get());
-                    Document pageFile = Jsoup
-                            .connect(site.get().getUrl() + page.get().getRelPath())
-                            .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                            .referrer("http://www.google.com")
-                            .ignoreHttpErrors(false)
-                            .get();
-                    page.get().setContent(pageFile.outerHtml());
-                    page.get().setStatusCode(pageFile.connection().response().statusCode());
-                    pageRepository.saveAndFlush(page.get());
-                    site.get().setStatusTime(LocalDateTime.now());
-                    siteRepository.saveAndFlush(site.get());
-                    response.setResult(true);
-                } else throw new PageIndexingException("Такого сайта не существует");
-            } else throw new PageIndexingException(Objects.requireNonNull(error.getFieldError()).getDefaultMessage());
-        } catch (Exception | PageIndexingException e) {
-            response.setResult(false);
-            response.setError(e.getMessage());
-            log.error(e.getMessage());
-        }
-        return response;
-    }
-*/
-
     private void taskListener(List<SiteParserRunner> runList) {
         List<CompletableFuture<Void>> completableFutures = runList.parallelStream().map(task -> CompletableFuture.runAsync(task, asyncService.getThreadPoolExecutor())).toList();
         Thread taskListener = new Thread(() -> {

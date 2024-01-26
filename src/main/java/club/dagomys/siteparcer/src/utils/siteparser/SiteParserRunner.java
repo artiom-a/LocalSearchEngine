@@ -68,7 +68,7 @@ public class SiteParserRunner implements Runnable {
                 this.site.setStatus(SiteStatus.FAILED);
                 this.site.setLastError(e.getMessage());
                 log.error(e.getMessage() + " " + "Поток был прерван пользователем");
-                indexingService.getSiteRepository().saveAndFlush(site);
+                indexingService.getSiteRepository().saveAndFlush(this.site);
             }
 
         }
