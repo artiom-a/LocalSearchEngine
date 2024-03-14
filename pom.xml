@@ -68,7 +68,7 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>8.1.0</version>
+            <version>8.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -148,7 +148,7 @@
                         <configuration>
                             <classifier>spring-boot</classifier>
                             <mainClass>
-                                club.dagomys.siteparcer.src.MainSiteParser
+                                club.dagomys.siteparser.src.MainSiteParser
                             </mainClass>
                         </configuration>
                     </execution>
