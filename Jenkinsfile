@@ -1,18 +1,9 @@
 pipeline {
-    agent none
+    agent { docker { image 'maven:3.9.6-eclipse-temurin-17-alpine' } }
     stages {
-        stage('Example Build') {
-            agent { docker 'maven:3.9.3-eclipse-temurin-17' }
+        stage('build') {
             steps {
-                echo 'Hello, Maven'
                 sh 'mvn --version'
-            }
-        }
-        stage('Example Test') {
-            agent { docker 'openjdk:17-jre' }
-            steps {
-                echo 'Hello, JDK'
-                sh 'java -version'
             }
         }
     }
