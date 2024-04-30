@@ -1,9 +1,13 @@
 pipeline {
-    agent { docker { image 'maven:3.9.6-eclipse-temurin-17-alpine' } }
+    agent { docker { image 'jelastic/maven:3.9.5-openjdk-21' } }
     stages {
+        stage("Maven container start"){
+            steps{
+            sh 'docker compose --profile maven up -d'
+            }
+        }
         stage('build') {
             steps {
-                sh 'cd /home/$USER'
                 sh 'mvn --version'
             }
         }
