@@ -1,6 +1,10 @@
+// Jenkinsfile
+
 pipeline {
   // Assign to docker agent(s) label, could also be 'any'
-  agent any
+  agent {
+    label 'docker' 
+  }
 
   stages {
     stage('Docker node test') {
@@ -32,4 +36,4 @@ pipeline {
       }
     }
   }
-}
+} 
