@@ -138,6 +138,16 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <classifier>maven</classifier>
+                            <mainClass>
+                                club/dagomys/siteparser/src/MainSiteParser.java
+                            </mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
@@ -154,7 +164,7 @@
                         <configuration>
                             <classifier>spring-boot</classifier>
                             <mainClass>
-                                club.dagomys.siteparser.src.MainSiteParser
+                                club/dagomys/siteparser/src/MainSiteParser.java
                             </mainClass>
                         </configuration>
                     </execution>
