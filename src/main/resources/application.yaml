@@ -17,6 +17,8 @@ spring:
     hidden-method:
       filter:
         enabled: true
+    servlet:
+        path: /templates
   output:
     ansi:
       enabled: ALWAYS
