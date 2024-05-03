@@ -1,7 +1,5 @@
 server:
   port: 8080
-  servlet:
-    context-path: /templates
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/linkdex
@@ -17,8 +15,6 @@ spring:
     hidden-method:
       filter:
         enabled: true
-    servlet:
-        path: /templates
   output:
     ansi:
       enabled: ALWAYS
