@@ -13,12 +13,12 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <springboot.version>3.2.4</springboot.version>
+        <springboot.version>3.2.5</springboot.version>
     </properties>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.4</version>
+        <version>3.2.5</version>
     </parent>
     <repositories>
         <repository>
@@ -30,6 +30,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -64,7 +71,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.26</version>
+            <version>1.18.30</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -121,25 +128,36 @@
             <artifactId>log4j-core</artifactId>
             <version>2.21.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.13.0</version>
+        </dependency>
     </dependencies>
-
-    <distributionManagement>
-        <repository>
-            <id>skillbox-gitlab</id>
-            <url>https://gitlab.skillbox.ru/api/v4/projects/263574/packages/maven</url>
-        </repository>
-
-        <snapshotRepository>
-            <id>skillbox-gitlab</id>
-            <url>https://gitlab.skillbox.ru/api/v4/projects/263574/packages/maven</url>
-        </snapshotRepository>
-    </distributionManagement>
-
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+                <version>3.4.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <classifier>maven</classifier>
+                            <mainClass>
+                                club.dagomys.siteparser.src.MainSiteParser.java
+                            </mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
@@ -156,7 +174,7 @@
                         <configuration>
                             <classifier>spring-boot</classifier>
                             <mainClass>
-                                club.dagomys.siteparser.src.MainSiteParser
+                                club.dagomys.siteparser.src.MainSiteParser.java
                             </mainClass>
                         </configuration>
                     </execution>
@@ -165,16 +183,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
             </plugin>
         </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <excludes>
-                    <exclude>src/main/resources</exclude>
-                </excludes>
-            </resource>
-        </resources>
+<!--        <resources>-->
+<!--            <resource>-->
+<!--                <directory>src/main/resources</directory>-->
+<!--                <filtering>true</filtering>-->
+<!--                <excludes>-->
+<!--                    <exclude>src/main/resources</exclude>-->
+<!--                </excludes>-->
+<!--            </resource>-->
+<!--        </resources>-->
     </build>
 </project>
