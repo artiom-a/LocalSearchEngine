@@ -143,7 +143,7 @@
                         <configuration>
                             <classifier>maven</classifier>
                             <mainClass>
-                                club/dagomys/siteparser/src/MainSiteParser.java
+                                club.dagomys.siteparser.src.MainSiteParser.java
                             </mainClass>
                         </configuration>
                     </execution>
@@ -164,7 +164,7 @@
                         <configuration>
                             <classifier>spring-boot</classifier>
                             <mainClass>
-                                club/dagomys/siteparser/src/MainSiteParser.java
+                                club.dagomys.siteparser.src.MainSiteParser.java
                             </mainClass>
                         </configuration>
                     </execution>
@@ -180,9 +180,9 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <excludes>
-                    <exclude>src/main/resources</exclude>
-                </excludes>
+<!--                <excludes>-->
+<!--                    <exclude>src/main/resources</exclude>-->
+<!--                </excludes>-->
             </resource>
         </resources>
     </build>
