@@ -4,8 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.lang.reflect.Method;
@@ -18,6 +20,7 @@ public class AsyncConfig implements AsyncConfigurer {
     private final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
 
     @Bean(name = "taskExecutor")
+    @Primary
     public ThreadPoolTaskExecutor taskExecutor() {
         log.info("Creating task executor...");
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -44,6 +47,26 @@ public class AsyncConfig implements AsyncConfigurer {
             }
 
         };
+    }
+
+
+    @Bean
+    public ForkJoinPoolFactoryBean forkJoinPoolFactoryBean() {
+        log.info("ForkJoinPool creating...");
+        ForkJoinPoolFactoryBean forkJoinPoolFactoryBean = new ForkJoinPoolFactoryBean();
+        forkJoinPoolFactoryBean.setParallelism(CORE_COUNT);
+        forkJoinPoolFactoryBean.setAwaitTerminationSeconds(4);
+        return forkJoinPoolFactoryBean;
+    }
+
+    @Bean (name = "siteParserThreadPool")
+    public ThreadPoolTaskExecutor siteParserThreadPool() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(CORE_COUNT);
+        executor.setMaxPoolSize(CORE_COUNT);
+        executor.setThreadNamePrefix("siteParserRunner-");
+        executor.initialize();
+        return executor;
     }
 
     @Override
