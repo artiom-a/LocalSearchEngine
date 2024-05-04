@@ -1,16 +1,14 @@
 server:
   port: 8080
 spring:
-#  main:
-#    allow-bean-definition-overriding: true
   datasource:
-    url: jdbc:mysql://10.0.0.9:3306/linkdex
+    url: jdbc:mysql://localhost:3306/linkdex
     username: skillbox_engine
     password: skillbox_engine
   jpa:
     generate-ddl: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
   mvc:
     favicon:
       enabled: true
@@ -26,8 +24,8 @@ spring-doc:
     operationsSorter: method
   writer-with-default-pretty-printer: true
 app-configuration:
-  userAgent: "Mozilla"
-  referer: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36"
+  userAgent: "Firefox"
+  referer: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
   siteList:
     - name: ""
       url: https://maxima.school
@@ -35,23 +33,37 @@ app-configuration:
       url: https://u-house-sochi.ru
     - name: ""
       url: https://spaodissey.ru
-    - name: ""
-      url: https://andaseat.com
-    - name: "Лента.ру"
-      url: https://www.lenta.ru/
-#    - name: "Плейбек"
-#      url: http://www.playback.ru/
-    - name: ""
-      url: https://radiomv.ru/
-#    - name: "ИПФ РАН"
-#      url: https://ipfran.ru/
-    - name: "НИКО АРТ"
-      url: https://www.nikoartgallery.com/
-#    - name: "Этсетра"
-#      url: https://et-cetera.ru/
-    - name: "Дом Булгакова"
-      url: https://dombulsdfgakova.ru/
+    #    - name: ""
+    #      url: https://www.svetlovka.ru
+    #    - name: ""
+    #      url: https://andaseat.com
+    #    - url: http://www.playback.ru/
+    #      name: "Плейбек"
+    #    - url: https://volochek.life/
+    #      name: "Волочек"
+    #    - url: https://radiomv.ru/
+    #      name: "РадиоМВ"
+    #    - url: https://ipfran.ru/
+    #      name: "ИПФ РАН"
+    #    - url: https://dimonvideo.ru/
+    #      name: "Димон Видео"
+    #    - url: https://www.nikoartgallery.com/
+    #      name: "НИКО АРТ"
+    #    - url: https://et-cetera.ru/
+    #      name: "Этсетра"
+    - url: https://www.lutherancathedral.ru/
+      name: "Церковь"
+    - url: https://dombulgakova.ru/
+      name: "Дом Булгакова"
+    - url: https://www.svetlovka.ru/
+      name: "Светловка"
 
-
-
+    - url: https://lenta.ru/
+      name: Лента.ру
+    - url: https://skillbox.ru/
+      name: Skillbox
+    - url: https://playback.ru/
+      name: PlayBack.Ru
+    - url: https://dombulgakova.ru/
+      name: Дом Булгакова
 
