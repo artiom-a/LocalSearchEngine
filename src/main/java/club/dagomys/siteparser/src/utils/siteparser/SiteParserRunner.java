@@ -7,6 +7,7 @@ import club.dagomys.siteparser.src.exception.LemmaNotFoundException;
 import club.dagomys.siteparser.src.exception.SiteIndexingException;
 import club.dagomys.siteparser.src.services.IndexingService;
 import club.dagomys.siteparser.src.utils.lemmatizator.LemmaCounter;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
@@ -23,13 +24,14 @@ import java.util.concurrent.RecursiveTask;
 
 @Component
 @Slf4j
+@NoArgsConstructor
 public class SiteParserRunner implements Runnable {
-    private final Site site;
+    private Site site;
     private volatile boolean isRunning;
     @Autowired
-    private final IndexingService indexingService;
-    private final Field title;
-    private final Field body;
+    private IndexingService indexingService;
+    private  Field title;
+    private  Field body;
 
 
     public SiteParserRunner(Site site, IndexingService indexingService) {
