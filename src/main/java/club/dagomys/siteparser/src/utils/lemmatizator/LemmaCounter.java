@@ -28,13 +28,16 @@ public class LemmaCounter {
     private final Pattern wordPatterRegexp = Pattern.compile("[A-zА-яё][A-zА-яё'^]*");
     private final Pattern english = Pattern.compile("([A-z]+)");
     private final Pattern russian = Pattern.compile("([А-яё]+)");
-    private final List<String> replacedText;
+    private List<String> replacedText;
 
     public LemmaCounter(String text) throws IOException {
         Matcher wordMatch = wordPatterRegexp.matcher(text.toLowerCase(Locale.ROOT).replaceAll("—|\\p{Punct}|\\s]", " "));
         replacedText = wordMatch.results()
                 .map(MatchResult::group).toList();
         wordsMap = new TreeMap<>();
+    }
+    public LemmaCounter() throws IOException {
+
     }
 
     public Map<String, Integer> countLemmas() {
