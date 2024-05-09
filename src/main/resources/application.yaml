@@ -9,6 +9,9 @@ spring:
     generate-ddl: true
     hibernate:
       ddl-auto: create
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
   mvc:
     favicon:
       enabled: true
